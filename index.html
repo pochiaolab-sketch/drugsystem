@@ -57,9 +57,11 @@
         .status-caution { background-color: #fef9c3 !important; color: #a16207 !important; }
         .status-normal { background-color: #f1f5f9; color: #334155; }
 
-        /* 🌟 新增：操作按鈕樣式 */
-        .action-btn { background: none; border: none; font-size: 1rem; cursor: pointer; opacity: 0.6; transition: 0.2s; padding: 2px 6px; }
-        .action-btn:hover { opacity: 1; transform: scale(1.2); }
+        /* 🌟 專業版操作按鈕樣式 */
+        .action-btn { background: none; border: none; cursor: pointer; color: #94a3b8; transition: all 0.2s ease; padding: 4px; display: inline-flex; align-items: center; justify-content: center; }
+        .action-btn.edit-btn:hover { color: #3b82f6; transform: scale(1.15); }
+        .action-btn.delete-btn:hover { color: #ef4444; transform: scale(1.15); }
+        
         .modal-body label { font-weight: 600; color: #475569; font-size: 0.9rem; margin-bottom: 4px; }
         .modal-body .form-control, .modal-body .form-select { border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.95rem; }
 
@@ -147,6 +149,7 @@
         </div>
     </div>
 
+    <!-- 編輯藥品資料的 Modal 視窗 -->
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
@@ -211,6 +214,7 @@
         </div>
     </div>
 
+    <!-- AI 小助手視窗 -->
     <div id="ai-chat-widget">
         <div id="ai-chat-box"><div id="ai-chat-header"><span>✨ 林伯樵助理</span><span id="ai-chat-close" onclick="toggleChat()">✖</span></div><div id="ai-chat-messages"><div class="chat-msg bot">你好！我是林伯樵實驗室的 AI 小管家 🤖</div></div><div id="ai-chat-input-area"><input type="text" id="ai-chat-input" placeholder="問問 AI..." onkeypress="if(event.key==='Enter') sendChatMessage()"><button id="ai-chat-send" onclick="sendChatMessage()">➤</button></div></div>
         <button id="ai-chat-btn" onclick="toggleChat()" title="開啟 AI 助理">🤖</button>
@@ -222,12 +226,16 @@
         // 🔴 這裡已為你寫好網址，請確認！
         const API_URL = "https://script.google.com/macros/s/AKfycbxJBLB2yQgs17l9fzbSVBNd94OseyyQrX-PlbfeZkrbyRpCYHPxiK8d62tz25RfevWUeQ/exec";
 
+        // 🌟 準備乾淨的 SVG 圖示 (編輯與垃圾桶)
+        const svgEdit = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`;
+        const svgDelete = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
+
         let chemicalData = []; let buyerList = []; let memoList = []; let locationList = []; let vendorList = []; 
         let searchTimeout = null; let currentEditRow = null; let editModalInstance = null;
         const opts = ['100%','90%','80%','70%','60%','50%','40%','30%','20%','10%','0%'];
         const LOCAL_STORAGE_KEY = 'LPC_LAB_DATA_V7';
 
-        function levenshtein(a, b) { /* 容錯演算法 */ const tmp = []; for (let i = 0; i <= a.length; i++) tmp[i] = [i]; for (let j = 0; j <= b.length; j++) tmp[0][j] = j; for (let i = 1; i <= a.length; i++) { for (let j = 1; j <= b.length; j++) { tmp[i][j] = a[i - 1] === b[j - 1] ? tmp[i - 1][j - 1] : Math.min(tmp[i - 1][j - 1] + 1, tmp[i][j - 1] + 1, tmp[i - 1][j] + 1); } } return tmp[a.length][b.length]; }
+        function levenshtein(a, b) { const tmp = []; for (let i = 0; i <= a.length; i++) tmp[i] = [i]; for (let j = 0; j <= b.length; j++) tmp[0][j] = j; for (let i = 1; i <= a.length; i++) { for (let j = 1; j <= b.length; j++) { tmp[i][j] = a[i - 1] === b[j - 1] ? tmp[i - 1][j - 1] : Math.min(tmp[i - 1][j - 1] + 1, tmp[i][j - 1] + 1, tmp[i - 1][j] + 1); } } return tmp[a.length][b.length]; }
 
         async function apiCall(action, params = {}) {
             params.action = action;
@@ -240,7 +248,7 @@
         function saveToLocal() { try { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ data: chemicalData, buyers: buyerList, memos: memoList, locations: locationList, vendors: vendorList })); } catch(e) {} }
 
         document.addEventListener('DOMContentLoaded', () => {
-            editModalInstance = new bootstrap.Modal(document.getElementById('editModal')); // 初始化編輯視窗
+            editModalInstance = new bootstrap.Modal(document.getElementById('editModal')); 
             let activeData = null; const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (localData) { try { const parsed = JSON.parse(localData); if (parsed.data && parsed.data.length > 0) activeData = parsed; } catch(e) {} }
 
@@ -275,7 +283,6 @@
             }).catch(err => { btn.classList.remove('spinning'); searchInput.disabled = false; alert("更新失敗，請檢查網路。"); });
         }
 
-        // 🌟 渲染所有的下拉選單 (人員、位置、廠商)
         function renderDropdowns() {
             const memoAuth = document.getElementById('memoAuthorSelect'); let currAuth = memoAuth.value;
             memoAuth.innerHTML = '<option value="">👤 留言者...</option>' + buyerList.map(b => `<option value="${b}">${b}</option>`).join('') + `<option disabled>──────</option><option value="ADD_NEW">➕ 新增人員...</option><option value="DELETE_USER">❌ 刪除人員...</option>`;
@@ -290,7 +297,6 @@
             if(currVen) editVen.value = currVen;
         }
 
-        // 🌟 通用的清單新增/刪除邏輯 (位置與廠商)
         function handleDropdownAction(type, selectElem) {
             const val = selectElem.value;
             if (val === 'ADD_NEW' || val === 'DELETE_USER') {
@@ -309,7 +315,6 @@
             }
         }
 
-        // --- 表格顯示邏輯 ---
         function formatStatus(s) { s = String(s || '').trim(); if (s === '1' || s === '1.0') return '100%'; if (s === '0') return '0%'; if (/^0\.[1-9]$/.test(s)) return (parseFloat(s)*100)+'%'; return s; }
 
         function getBuyerSelectHtml(r) {
@@ -337,15 +342,14 @@
                 let selectHtml = `<select class="sheet-dropdown ${colorClass}" data-original="${s}" onchange="syncStatus(this,'${r['來源分頁']}',${r['_rowIndex']},${r['_statusColIndex']})">` + opts.map(o => `<option value="${o}" ${o===s?'selected':''}>${o}</option>`).join('') + `</select>`;
                 let isOrdered = String(r['需訂購'] || '').toLowerCase() === 'true'; let orderHtml = r['_orderColIndex'] > 0 ? `<input type="checkbox" class="form-check-input order-checkbox order-chk-${r['_rowIndex']}" ${isOrdered ? 'checked' : ''} onchange="syncOrderCheck(this, '${r['來源分頁']}', ${r['_rowIndex']}, ${r['_orderColIndex']})">` : '-';
                 
-                // 🌟 新增：操作按鈕 (編輯 & 刪除)
-                let actionHtml = `<button class="action-btn" title="編輯" onclick="openEditModal('${r['來源分頁']}', ${r['_rowIndex']})">✏️</button>
-                                  <button class="action-btn" title="刪除" onclick="confirmDelete('${r['來源分頁']}', ${r['_rowIndex']}, '${r['藥品名稱']}')">🗑️</button>`;
+                // 🌟 使用 SVG 替換 Emoji
+                let actionHtml = `<button class="action-btn edit-btn" title="編輯" onclick="openEditModal('${r['來源分頁']}', ${r['_rowIndex']})">${svgEdit}</button>
+                                  <button class="action-btn delete-btn" title="刪除" onclick="confirmDelete('${r['來源分頁']}', ${r['_rowIndex']}, '${r['藥品名稱']}')">${svgDelete}</button>`;
 
-                return `<tr><td data-label="藥櫃" class="sheet-cell"><span class="badge-soft badge-sheet">${r['來源分頁']}</span></td><td data-label="藥品名稱" class="name-cell">${r['藥品名稱']}</td><td data-label="濃度">${r['濃度']||'-'}</td><td data-label="CAS NO.">${r['CAS  NO.']||r['CAS NO.']||'-'}</td><td data-label="規格/廠商" class="spec-cell"><div class="spec-vendor-container"><span class="spec-item">${r['規格']||'-'}</span><span class="vendor-item">${r['廠商']||'-'}</span></div></td><td data-label="位置"><span class="badge-soft badge-location">${r['位置']||'-'}</span></td><td data-label="編號"><span class="badge-num">${r['編號']||'-'}</span></td><td data-label="使用狀態">${selectHtml}</td><td data-label="請購人">${getBuyerSelectHtml(r)}</td><td data-label="請購日">${getDateInputHtml(r, '請購日', '_reqDateColIndex', 'req-date')}</td><td data-label="訂購日">${getDateInputHtml(r, '訂購日', '_orderDateColIndex', 'order-date')}</td><td data-label="需訂購">${orderHtml}</td><td data-label="GHS">${ghsBadge}</td><td data-label="操作">${actionHtml}</td></tr>`;
+                return `<tr><td data-label="藥櫃" class="sheet-cell"><span class="badge-soft badge-sheet">${r['來源分頁']}</span></td><td data-label="藥品名稱" class="name-cell">${r['藥品名稱']}</td><td data-label="濃度">${r['濃度']||'-'}</td><td data-label="CAS NO.">${r['CAS  NO.']||r['CAS NO.']||'-'}</td><td data-label="規格/廠商" class="spec-cell"><div class="spec-vendor-container"><span class="spec-item">${r['規格']||'-'}</span><span class="vendor-item">${r['廠商']||'-'}</span></div></td><td data-label="位置"><span class="badge-soft badge-location">${r['位置']||'-'}</span></td><td data-label="編號"><span class="badge-num">${r['編號']||'-'}</span></td><td data-label="使用狀態">${selectHtml}</td><td data-label="請購人">${getBuyerSelectHtml(r)}</td><td data-label="請購日">${getDateInputHtml(r, '請購日', '_reqDateColIndex', 'req-date')}</td><td data-label="訂購日">${getDateInputHtml(r, '訂購日', '_orderDateColIndex', 'order-date')}</td><td data-label="需訂購">${orderHtml}</td><td data-label="GHS">${ghsBadge}</td><td data-label="操作" style="white-space:nowrap;">${actionHtml}</td></tr>`;
             }).join('');
         }
 
-        // 🌟 新增：開啟編輯視窗並填入資料
         function openEditModal(sheetName, rowIndex) {
             currentEditRow = chemicalData.find(r => r['來源分頁'] === sheetName && r['_rowIndex'] === rowIndex);
             if (!currentEditRow) return alert("找不到藥品資料！");
@@ -357,7 +361,6 @@
             document.getElementById('editSpec').value = currentEditRow['規格'] || '';
             document.getElementById('editNum').value = currentEditRow['編號'] || '';
             
-            // 處理選單：如果原本的值不在清單內，動態幫他加一個暫時選項
             const venSelect = document.getElementById('editVendor'); const locSelect = document.getElementById('editLocation');
             let vVal = String(currentEditRow['廠商'] || '').trim(); let lVal = String(currentEditRow['位置'] || '').trim();
             if(vVal && !vendorList.includes(vVal)) { let opt = document.createElement('option'); opt.value = vVal; opt.text = vVal; venSelect.add(opt, venSelect.options[1]); }
@@ -371,12 +374,10 @@
             editModalInstance.show();
         }
 
-        // 🌟 新增：儲存編輯資料
         function saveEditData() {
             if (!currentEditRow) return;
             const btn = document.getElementById('saveEditBtn'); btn.disabled = true; btn.innerText = "儲存中...";
 
-            // 將原本 row 物件裡的名字當作 key 來更新
             let updateData = {};
             for (let key in currentEditRow) {
                 if (key.includes('藥品名稱')) updateData[key] = document.getElementById('editName').value;
@@ -397,7 +398,6 @@
             }).catch(e => { btn.disabled = false; btn.innerText = "儲存修改"; alert("連線異常！"); });
         }
 
-        // 🌟 新增：刪除藥品警告與執行
         function confirmDelete(sheetName, rowIndex, drugName) {
             if (confirm(`🚨 警告：您確定要將【 ${drugName} 】從資料庫中永久刪除嗎？\n(刪除後無法復原，請確認此藥品已完全報廢或用罄)`)) {
                 document.getElementById('searchInput').placeholder = "🗑️ 正在從雲端刪除資料...";
@@ -407,7 +407,6 @@
             }
         }
 
-        // --- 以下為原有的附屬功能 (搜尋、請購、AI聊天) ---
         document.getElementById('searchInput').oninput = function() {
             clearTimeout(searchTimeout); const term = this.value.toLowerCase().trim(); updateUIVisibility(term); 
             searchTimeout = setTimeout(() => { 
