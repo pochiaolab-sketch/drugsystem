@@ -148,6 +148,7 @@
         </div>
     </div>
 
+    <!-- 編輯藥品資料的 Modal 視窗 -->
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
@@ -178,12 +179,12 @@
                             <input type="text" id="editSpec" class="form-control">
                         </div>
                         <div class="col-md-6">
-                            <label>廠商</label>
-                            <select id="editVendor" class="form-select" onchange="handleDropdownAction('VENDORS', this)"></select>
+                            <label>廠商 <small style="color:#94a3b8; font-weight:normal;">(名單對應「廠商」分頁)</small></label>
+                            <select id="editVendor" class="form-select"></select>
                         </div>
                         <div class="col-md-6">
-                            <label>位置</label>
-                            <select id="editLocation" class="form-select" onchange="handleDropdownAction('LOCATIONS', this)"></select>
+                            <label>位置 <small style="color:#94a3b8; font-weight:normal;">(根據目前藥櫃動態顯示)</small></label>
+                            <select id="editLocation" class="form-select" onchange="handleLocationChange(this)"></select>
                         </div>
                         <div class="col-md-4">
                             <label>編號</label>
@@ -220,13 +221,12 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // 🔴 請確保這裡是你專屬的 Google 網址
         const API_URL = "https://script.google.com/macros/s/AKfycbxJBLB2yQgs17l9fzbSVBNd94OseyyQrX-PlbfeZkrbyRpCYHPxiK8d62tz25RfevWUeQ/exec";
 
         const svgEdit = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`;
         const svgDelete = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
 
-        let chemicalData = []; let buyerList = []; let memoList = []; let locationList = []; let vendorList = []; 
+        let chemicalData = []; let buyerList = []; let memoList = []; let locationsMap = {}; let vendorList = []; 
         let searchTimeout = null; let currentEditRow = null; let editModalInstance = null;
         const opts = ['100%','90%','80%','70%','60%','50%','40%','30%','20%','10%','0%'];
         const LOCAL_STORAGE_KEY = 'LPC_LAB_DATA_V7';
@@ -241,7 +241,7 @@
             } catch (err) { console.error("API 錯誤:", err); throw err; }
         }
 
-        function saveToLocal() { try { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ data: chemicalData, buyers: buyerList, memos: memoList, locations: locationList, vendors: vendorList })); } catch(e) {} }
+        function saveToLocal() { try { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ data: chemicalData, buyers: buyerList, memos: memoList, locationsMap: locationsMap, vendors: vendorList })); } catch(e) {} }
 
         document.addEventListener('DOMContentLoaded', () => {
             editModalInstance = new bootstrap.Modal(document.getElementById('editModal')); 
@@ -250,13 +250,13 @@
 
             if (activeData) {
                 chemicalData = activeData.data || []; buyerList = activeData.buyers || []; memoList = activeData.memos || []; 
-                locationList = activeData.locations || []; vendorList = activeData.vendors || []; initUI(); 
+                locationsMap = activeData.locationsMap || {}; vendorList = activeData.vendors || []; initUI(); 
             } else { document.getElementById('searchInput').placeholder = "首次載入中，請稍候..."; }
 
             apiCall('getLabData').then(jsonString => {
                 const response = JSON.parse(jsonString);
                 chemicalData = response.data || []; buyerList = response.buyers || []; memoList = response.memos || []; 
-                locationList = response.locations || []; vendorList = response.vendors || []; saveToLocal();
+                locationsMap = response.locationsMap || {}; vendorList = response.vendors || []; saveToLocal();
                 if(!activeData) initUI(); 
                 else { const term = document.getElementById('searchInput').value; if (!term) { renderDropdowns(); renderMemos(); updateBuyList(); displayData(chemicalData); } }
             }).catch(e => console.log("背景更新失敗", e));
@@ -273,7 +273,7 @@
             if (btn.classList.contains('spinning')) return; btn.classList.add('spinning'); searchInput.disabled = true; searchInput.placeholder = "🔄 同步最新資料中...";
             localStorage.removeItem(LOCAL_STORAGE_KEY);
             apiCall('forceRefreshData').then(jsonString => {
-                const response = JSON.parse(jsonString); chemicalData = response.data || []; buyerList = response.buyers || []; memoList = response.memos || []; locationList = response.locations || []; vendorList = response.vendors || []; saveToLocal(); 
+                const response = JSON.parse(jsonString); chemicalData = response.data || []; buyerList = response.buyers || []; memoList = response.memos || []; locationsMap = response.locationsMap || {}; vendorList = response.vendors || []; saveToLocal(); 
                 btn.classList.remove('spinning'); searchInput.disabled = false; searchInput.placeholder = `🔍 智慧搜尋 ${chemicalData.length} 筆資料...`;
                 renderDropdowns(); renderMemos(); updateBuyList(); document.getElementById('searchInput').dispatchEvent(new Event('input'));
             }).catch(err => { btn.classList.remove('spinning'); searchInput.disabled = false; alert("更新失敗，請檢查網路。"); });
@@ -283,32 +283,6 @@
             const memoAuth = document.getElementById('memoAuthorSelect'); let currAuth = memoAuth.value;
             memoAuth.innerHTML = '<option value="">👤 留言者...</option>' + buyerList.map(b => `<option value="${b}">${b}</option>`).join('') + `<option disabled>──────</option><option value="ADD_NEW">➕ 新增人員...</option><option value="DELETE_USER">❌ 刪除人員...</option>`;
             if (buyerList.includes(currAuth)) memoAuth.value = currAuth; else memoAuth.value = '';
-
-            const editLoc = document.getElementById('editLocation'); let currLoc = editLoc.value;
-            editLoc.innerHTML = '<option value="">- 未標示 -</option>' + locationList.map(l => `<option value="${l}">${l}</option>`).join('') + `<option disabled>──────</option><option value="ADD_NEW">➕ 新增位置...</option><option value="DELETE_USER">❌ 刪除位置...</option>`;
-            if(currLoc) editLoc.value = currLoc;
-
-            const editVen = document.getElementById('editVendor'); let currVen = editVen.value;
-            editVen.innerHTML = '<option value="">- 未標示 -</option>' + vendorList.map(v => `<option value="${v}">${v}</option>`).join('') + `<option disabled>──────</option><option value="ADD_NEW">➕ 新增廠商...</option><option value="DELETE_USER">❌ 刪除廠商...</option>`;
-            if(currVen) editVen.value = currVen;
-        }
-
-        function handleDropdownAction(type, selectElem) {
-            const val = selectElem.value;
-            if (val === 'ADD_NEW' || val === 'DELETE_USER') {
-                let actionStr = val === 'ADD_NEW' ? '新增' : '刪除'; let typeName = type === 'LOCATIONS' ? '位置' : '廠商';
-                let name = prompt(`請輸入要「${actionStr}」的${typeName}名稱：`);
-                if (name && name.trim() !== '') {
-                    const targetName = name.trim(); selectElem.disabled = true;
-                    let apiCmd = (val === 'ADD_NEW' ? 'add' : 'remove') + (type === 'LOCATIONS' ? 'Location' : 'Vendor');
-                    apiCall(apiCmd, {name: targetName}).then(updatedList => {
-                        if(type === 'LOCATIONS') locationList = updatedList; else vendorList = updatedList;
-                        saveToLocal(); renderDropdowns();
-                        selectElem.value = val === 'ADD_NEW' ? targetName : ''; selectElem.disabled = false;
-                        if(val === 'DELETE_USER') alert(`已刪除${typeName}「${targetName}」。`);
-                    }).catch(e => { selectElem.disabled = false; selectElem.value = ''; alert('操作失敗！'); });
-                } else { selectElem.value = ''; }
-            }
         }
 
         function formatStatus(s) { s = String(s || '').trim(); if (s === '1' || s === '1.0') return '100%'; if (s === '0') return '0%'; if (/^0\.[1-9]$/.test(s)) return (parseFloat(s)*100)+'%'; return s; }
@@ -345,7 +319,19 @@
             }).join('');
         }
 
-        // 🌟 修正：動態掃描所有欄位，確保資料完美載入視窗
+        // 🌟 自訂新增位置邏輯
+        function handleLocationChange(selectElem) {
+            if(selectElem.value === 'ADD_NEW') {
+                let name = prompt("請輸入新的位置名稱：\n(儲存藥品後，此位置將自動加入該藥櫃的清單中)");
+                if(name && name.trim() !== '') {
+                    let opt = document.createElement('option'); opt.value = name.trim(); opt.text = name.trim();
+                    selectElem.add(opt, selectElem.options[1]); selectElem.value = name.trim();
+                } else {
+                    selectElem.value = '';
+                }
+            }
+        }
+
         function openEditModal(sheetName, rowIndex) {
             currentEditRow = chemicalData.find(r => r['來源分頁'] === sheetName && r['_rowIndex'] === rowIndex);
             if (!currentEditRow) return alert("找不到藥品資料！");
@@ -367,11 +353,21 @@
             document.getElementById('editSpec').value = specVal;
             document.getElementById('editNum').value = numVal;
             
-            const venSelect = document.getElementById('editVendor'); const locSelect = document.getElementById('editLocation');
+            const venSelect = document.getElementById('editVendor'); 
+            const locSelect = document.getElementById('editLocation');
+            
             let vVal = String(venVal).trim(); let lVal = String(locVal).trim();
+            
+            // 🌟 廠商：直接使用讀取自廠商分頁的 vendorList
+            venSelect.innerHTML = '<option value="">- 未標示 -</option>' + vendorList.map(v => `<option value="${v}">${v}</option>`).join('');
             if(vVal && !vendorList.includes(vVal)) { let opt = document.createElement('option'); opt.value = vVal; opt.text = vVal; venSelect.add(opt, venSelect.options[1]); }
-            if(lVal && !locationList.includes(lVal)) { let opt = document.createElement('option'); opt.value = lVal; opt.text = lVal; locSelect.add(opt, locSelect.options[1]); }
-            venSelect.value = vVal; locSelect.value = lVal;
+            venSelect.value = vVal;
+
+            // 🌟 位置：依照目前藥櫃(sheetName)動態載入專屬位置
+            let sheetLocs = locationsMap[sheetName] || [];
+            locSelect.innerHTML = '<option value="">- 未標示 -</option>' + sheetLocs.map(l => `<option value="${l}">${l}</option>`).join('') + `<option disabled>──────</option><option value="ADD_NEW">➕ 自訂新位置...</option>`;
+            if(lVal && !sheetLocs.includes(lVal)) { let opt = document.createElement('option'); opt.value = lVal; opt.text = lVal; locSelect.add(opt, locSelect.options[1]); }
+            locSelect.value = lVal;
 
             document.getElementById('editStatus').value = formatStatus(currentEditRow['使用狀態']);
             let ghsVal = String(currentEditRow['GHS'] || '').toLowerCase();
@@ -380,7 +376,7 @@
             editModalInstance.show();
         }
 
-        // 🌟 修正：精準打擊！只更新「有被修改過」的欄位，保護原始資料
+        // 🌟 100% 絕對精準防護的儲存邏輯
         function saveEditData() {
             if (!currentEditRow) return;
             const btn = document.getElementById('saveEditBtn'); btn.disabled = true; btn.innerText = "儲存中...";
@@ -388,36 +384,34 @@
             let updateData = {};
             const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value : '';
             
-            for (let key in currentEditRow) {
-                if (key.startsWith('_') || key === '來源分頁') continue;
-                
-                let originalVal = String(currentEditRow[key] || '').trim();
-                let newVal = originalVal;
-                
-                if (key.includes('名稱')) newVal = getVal('editName');
-                else if (key.toUpperCase().includes('CAS')) newVal = getVal('editCas');
-                else if (key.includes('濃度')) newVal = getVal('editConc');
-                else if (key.includes('規格')) newVal = getVal('editSpec');
-                else if (key.includes('廠商') || key.includes('廠牌')) newVal = getVal('editVendor');
-                else if (key.includes('位置')) newVal = getVal('editLocation');
-                else if (key.includes('編號')) newVal = getVal('editNum');
-                else if (key.includes('狀態')) newVal = getVal('editStatus');
-                else if (key.toUpperCase().includes('GHS')) newVal = getVal('editGhs') === 'true' ? '是' : '否';
+            // 幫助我們找到試算表裡「最準確」的欄位名稱 (避免 CAS編號 跟 編號 搞混)
+            const exactKey = (possibleNames) => {
+                return Object.keys(currentEditRow).find(k => possibleNames.includes(k.replace(/\s+/g, '')));
+            };
 
-                // 只有當新值跟舊值不一樣時，才加進去準備上傳
-                if (newVal.trim() !== originalVal) {
-                    updateData[key] = newVal.trim();
+            let kName = exactKey(['藥品名稱', '品名']); if(kName) updateData[kName] = getVal('editName');
+            let kCas = exactKey(['CASNO.', 'CASNO', 'CAS']); if(kCas) updateData[kCas] = getVal('editCas');
+            let kConc = exactKey(['濃度']); if(kConc) updateData[kConc] = getVal('editConc');
+            let kSpec = exactKey(['規格']); if(kSpec) updateData[kSpec] = getVal('editSpec');
+            let kVen = exactKey(['廠商', '廠牌']); if(kVen) updateData[kVen] = getVal('editVendor');
+            let kLoc = exactKey(['位置']); if(kLoc) updateData[kLoc] = getVal('editLocation');
+            let kNum = exactKey(['編號']); if(kNum) updateData[kNum] = getVal('editNum');
+            let kStatus = exactKey(['使用狀態', '狀態']); if(kStatus) updateData[kStatus] = getVal('editStatus');
+            let kGhs = exactKey(['GHS', 'GHS標籤']); if(kGhs) updateData[kGhs] = getVal('editGhs') === 'true' ? '是' : '否';
+
+            // 只有當「修改後的值」真的跟「原本儲存格的值」不一樣時，才上傳更新
+            let finalUpdateData = {};
+            for(let key in updateData) {
+                if(updateData[key].trim() !== String(currentEditRow[key] || '').trim()) {
+                    finalUpdateData[key] = updateData[key].trim();
                 }
             }
 
-            // 如果什麼都沒改，就直接關閉視窗，不用浪費時間上傳
-            if (Object.keys(updateData).length === 0) {
-                editModalInstance.hide();
-                btn.disabled = false; btn.innerText = "儲存修改";
-                return;
+            if (Object.keys(finalUpdateData).length === 0) {
+                editModalInstance.hide(); btn.disabled = false; btn.innerText = "儲存修改"; return;
             }
 
-            apiCall('updateChemical', { sheetName: currentEditRow['來源分頁'], rowIndex: currentEditRow['_rowIndex'], updateData: updateData })
+            apiCall('updateChemical', { sheetName: currentEditRow['來源分頁'], rowIndex: currentEditRow['_rowIndex'], updateData: finalUpdateData })
             .then(success => {
                 btn.disabled = false; btn.innerText = "儲存修改";
                 if(success) { editModalInstance.hide(); forceRefresh(); } else { alert("儲存失敗！"); }
