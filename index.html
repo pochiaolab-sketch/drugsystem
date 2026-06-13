@@ -22,12 +22,18 @@
         .memo-title { font-weight: 800; color: #b45309; margin-bottom: 10px; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
         .memo-title::before { content: '📌'; margin-right: 6px; }
         .memo-input-group { display: flex; gap: 8px; margin-bottom: 10px; }
+        
+        /* 🌟 新增：備忘錄人員下拉選單樣式 */
+        .memo-author-select { border-radius: 10px; border: 1px solid #fcd34d; padding: 8px 12px; font-size: 0.95rem; outline: none; background: #fffbeb; color: #92400e; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+        
         .memo-input { flex-grow: 1; border-radius: 10px; border: 1px solid #fcd34d; padding: 8px 12px; font-size: 0.95rem; outline: none; background: #ffffff; transition: 0.3s; }
         .memo-btn { background: #fbbf24; color: #78350f; font-weight: 700; border: none; border-radius: 10px; padding: 8px 16px; cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 0.9rem; }
         .memo-item { background: #ffffff; padding: 10px 14px; border-radius: 10px; border-left: 4px solid #fbbf24; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;}
-        .memo-text { font-size: 0.9rem; color: #451a03; flex-grow: 1; margin-right: 12px; }
+        .memo-text { font-size: 0.9rem; color: #451a03; flex-grow: 1; margin-right: 12px; display: flex; align-items: center; gap: 8px; }
+        .memo-author-badge { background-color: #fde047; color: #854d0e; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; white-space: nowrap; }
         .memo-meta { font-size: 0.7rem; color: #92400e; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
         .memo-delete { background: #fee2e2; border: none; color: #ef4444; border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.8rem; }
+        
         .buy-list-card { background: #fff5f5; border: 2px solid #feb2b2; border-radius: 16px; padding: 15px; margin-bottom: 20px; display: none; }
         .buy-list-title { color: #c53030; font-weight: 800; font-size: 1rem; margin-bottom: 10px; text-align: center; }
         .scroll-container { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
@@ -108,6 +114,10 @@
         <div class="memo-card" id="memoSection">
             <div class="memo-title">藥品備忘錄</div>
             <div class="memo-input-group">
+                <!-- 🌟 新增：與請購人同步的留言者選單 -->
+                <select id="memoAuthorSelect" class="memo-author-select">
+                    <option value="">👤 留言者...</option>
+                </select>
                 <input type="text" id="memoInput" class="memo-input" placeholder="輸入藥品相關留言，如藥品資訊有誤，需藥品管理人員修改..." onkeypress="if(event.key==='Enter') addNewMemo()">
                 <button class="memo-btn" onclick="addNewMemo()">＋ 留言</button>
             </div>
@@ -153,13 +163,12 @@
 
     <script>
         // 🔴 極度重要：請務必把下面引號裡面的文字，換成你的 Google Apps Script 部署網址！
-        const API_URL = "https://script.google.com/macros/s/AKfycbxJBLB2yQgs17l9fzbSVBNd94OseyyQrX-PlbfeZkrbyRpCYHPxiK8d62tz25RfevWUeQ/exec";
+        const API_URL = "在此貼上你的_Google_Apps_Script_部署網址";
 
         let chemicalData = []; let buyerList = []; let memoList = []; let searchTimeout = null; 
         const opts = ['100%','90%','80%','70%','60%','50%','40%','30%','20%','10%','0%'];
         const LOCAL_STORAGE_KEY = 'LPC_LAB_DATA_V7';
 
-        // 🌟 智慧演算法：拼字容錯 (Levenshtein)
         function levenshtein(a, b) {
             const tmp = [];
             for (let i = 0; i <= a.length; i++) tmp[i] = [i];
@@ -204,13 +213,14 @@
                 const response = JSON.parse(jsonString);
                 chemicalData = response.data || []; buyerList = response.buyers || []; memoList = response.memos || []; saveToLocal();
                 if(!activeData) initUI(); 
-                else { const term = document.getElementById('searchInput').value; if (!term) { renderMemos(); updateBuyList(); displayData(chemicalData); } }
+                else { const term = document.getElementById('searchInput').value; if (!term) { renderMemoAuthorSelect(); renderMemos(); updateBuyList(); displayData(chemicalData); } }
             }).catch(e => console.log("背景更新失敗", e));
         });
 
         function initUI() {
             document.getElementById('tableWrapper').style.display = 'block'; document.getElementById('memoSection').style.display = 'block';
             const searchInput = document.getElementById('searchInput'); searchInput.disabled = false; searchInput.placeholder = `🔍 智慧搜尋 ${chemicalData.length} 筆資料...`;
+            renderMemoAuthorSelect(); // 載入留言者選單
             renderMemos(); updateBuyList(); displayData(chemicalData);
         }
 
@@ -223,9 +233,8 @@
             apiCall('forceRefreshData').then(jsonString => {
                 const response = JSON.parse(jsonString); chemicalData = response.data || []; buyerList = response.buyers || []; memoList = response.memos || []; saveToLocal(); 
                 btn.classList.remove('spinning'); searchInput.disabled = false; searchInput.placeholder = `🔍 智慧搜尋 ${chemicalData.length} 筆資料...`;
-                renderMemos(); updateBuyList();
+                renderMemoAuthorSelect(); renderMemos(); updateBuyList();
                 
-                // 套用智慧搜尋
                 const term = searchInput.value.toLowerCase().trim();
                 if (!term) return displayData(chemicalData);
                 const filtered = chemicalData.filter(r => {
@@ -236,6 +245,16 @@
                 });
                 displayData(filtered);
             }).catch(err => { btn.classList.remove('spinning'); searchInput.disabled = false; searchInput.placeholder = oldPlaceholder; alert("更新失敗，請檢查網路連線。"); });
+        }
+
+        // 🌟 新增：渲染備忘錄的留言者下拉選單 (和請購人名單同步)
+        function renderMemoAuthorSelect() {
+            const select = document.getElementById('memoAuthorSelect');
+            let currentVal = select.value; // 記住目前選的人
+            let html = '<option value="">👤 留言者...</option>';
+            buyerList.forEach(b => { html += `<option value="${b}">${b}</option>`; });
+            select.innerHTML = html;
+            if (buyerList.includes(currentVal)) select.value = currentVal;
         }
 
         function formatStatus(s) { s = String(s || '').trim(); if (s === '1' || s === '1.0') return '100%'; if (s === '0') return '0%'; if (/^0\.[1-9]$/.test(s)) return (parseFloat(s)*100)+'%'; return s; }
@@ -278,25 +297,16 @@
             }).join('');
         }
 
-        // 🌟 智慧容錯搜尋邏輯
         document.getElementById('searchInput').oninput = function() {
-            clearTimeout(searchTimeout); 
-            const term = this.value.toLowerCase().trim(); 
-            updateUIVisibility(term); 
-            
+            clearTimeout(searchTimeout); const term = this.value.toLowerCase().trim(); updateUIVisibility(term); 
             searchTimeout = setTimeout(() => { 
                 if(!term) return displayData(chemicalData); 
-                
                 const filtered = chemicalData.filter(r => {
                     const name = String(r['藥品名稱'] || '').toLowerCase();
                     const cas = String(r['CAS  NO.'] || r['CAS NO.'] || '').toLowerCase();
-                    
-                    // 容錯判斷：長度 > 4 且差異度 <= 2 的單字視為相符
                     const isFuzzyMatch = term.length > 4 && name.split(/[\s\-]+/).some(w => levenshtein(term, w) <= 2);
-                    
                     return name.includes(term) || cas.includes(term) || isFuzzyMatch;
                 });
-                
                 displayData(filtered); 
             }, 250); 
         };
@@ -307,15 +317,29 @@
             else { memoSection.style.display = 'block'; const hasToBuy = chemicalData.some(r => String(r['需訂購'] || '').toLowerCase() === 'true'); buyListContainer.style.display = hasToBuy ? 'block' : 'none'; }
         }
 
+        // 🌟 修改：渲染備忘錄時，加上留言者的黃色標籤
         function renderMemos() {
             const container = document.getElementById('memoListContainer');
             if (memoList.length === 0) { container.innerHTML = '<div class="text-center text-muted" style="font-size:0.85rem;">目前沒有備忘錄。</div>'; return; }
-            container.innerHTML = memoList.map(m => `<div class="memo-item"><div class="memo-text">${m.text}</div><div class="memo-meta"><span>${m.time}</span><button class="memo-delete" onclick="deleteMemo('${m.id}')">✖</button></div></div>`).join('');
+            container.innerHTML = memoList.map(m => {
+                const authorTag = m.author ? `<span class="memo-author-badge">${m.author}</span>` : '';
+                return `<div class="memo-item"><div class="memo-text">${authorTag}${m.text}</div><div class="memo-meta"><span>${m.time}</span><button class="memo-delete" onclick="deleteMemo('${m.id}')">✖</button></div></div>`;
+            }).join('');
         }
 
+        // 🌟 修改：送出留言時，強制檢查是否選了留言者
         function addNewMemo() {
-            const input = document.getElementById('memoInput'); if (!input.value.trim()) return;
-            apiCall('addMemo', {text: input.value.trim()}).then(updated => { input.value = ''; memoList = updated; saveToLocal(); renderMemos(); });
+            const input = document.getElementById('memoInput'); 
+            const authorSelect = document.getElementById('memoAuthorSelect');
+            const textVal = input.value.trim();
+            const authorVal = authorSelect.value;
+            
+            if (!authorVal) { alert("⚠️ 為了方便管理，請先在左邊的下拉選單選擇「留言者」！"); authorSelect.focus(); return; }
+            if (!textVal) return;
+
+            apiCall('addMemo', {text: textVal, author: authorVal}).then(updated => { 
+                input.value = ''; memoList = updated; saveToLocal(); renderMemos(); 
+            });
         }
 
         function deleteMemo(id) { if (confirm('確定刪除這則備忘錄嗎？')) { apiCall('deleteMemo', {id: id}).then(updated => { memoList = updated; saveToLocal(); renderMemos(); }); } }
@@ -337,10 +361,18 @@
                     const targetName = name.trim(); selectElem.disabled = true;
                     if (val === 'ADD_NEW') {
                         apiCall('addBuyer', {name: targetName}).then(updatedList => { buyerList = updatedList; return apiCall('updateSheetStatus', {sheetName: sheetName, rowIndex: rowIndex, colIndex: colIndex, newValue: targetName}); }).then(() => {
-                            let r = chemicalData.find(x => x['來源分頁']===sheetName && x['_rowIndex']===rowIndex); if(r) { r['請購人'] = targetName; saveToLocal(); } displayData(chemicalData); updateBuyList();
+                            let r = chemicalData.find(x => x['來源分頁']===sheetName && x['_rowIndex']===rowIndex); if(r) { r['請購人'] = targetName; saveToLocal(); } 
+                            // 🌟 同步更新備忘錄下拉選單
+                            renderMemoAuthorSelect();
+                            displayData(chemicalData); updateBuyList();
                         }).catch(e => { selectElem.disabled = false; selectElem.value = originalVal; alert('操作失敗！'); });
                     } else {
-                        apiCall('removeBuyer', {name: targetName}).then(updatedList => { buyerList = updatedList; chemicalData.forEach(r => { if(String(r['請購人']) === targetName) r['請購人'] = ''; }); saveToLocal(); displayData(chemicalData); updateBuyList(); alert(`已刪除人員「${targetName}」。`); }).catch(e => { selectElem.disabled = false; selectElem.value = originalVal; alert('操作失敗！'); });
+                        apiCall('removeBuyer', {name: targetName}).then(updatedList => { 
+                            buyerList = updatedList; chemicalData.forEach(r => { if(String(r['請購人']) === targetName) r['請購人'] = ''; }); saveToLocal(); 
+                            // 🌟 同步更新備忘錄下拉選單
+                            renderMemoAuthorSelect();
+                            displayData(chemicalData); updateBuyList(); alert(`已刪除人員「${targetName}」。`); 
+                        }).catch(e => { selectElem.disabled = false; selectElem.value = originalVal; alert('操作失敗！'); });
                     }
                 } else { selectElem.value = originalVal; }
             } else {
