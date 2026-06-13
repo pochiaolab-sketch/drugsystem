@@ -111,7 +111,11 @@
                         🧪 LPC lab 藥品系統
                         <span id="refreshBtn" onclick="forceRefresh()" style="cursor: pointer; font-size: 1.2rem; margin-left: 5px; display: inline-block; user-select: none;" title="手動同步最新資料">🔄</span>
                     </h3>
-                    <input type="text" id="searchInput" class="form-control search-input" placeholder="秒速載入中..." disabled>
+                    <!-- 🌟 搜尋列與新增按鈕並排 -->
+                    <div class="d-flex gap-2">
+                        <input type="text" id="searchInput" class="form-control search-input" placeholder="秒速載入中..." disabled>
+                        <button id="openAddBtn" class="btn text-white shadow-sm" style="background-color: #4338ca; font-weight: 700; border-radius: 12px; white-space: nowrap; padding: 0 20px; transition: 0.2s;" onclick="openAddModal()" disabled>＋ 新增藥品</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -146,69 +150,81 @@
                 </table>
             </div>
         </div>
+    </div>
 
-        <div class="glass-card mt-4" id="addChemicalSection" style="display: none; padding: 25px 30px;">
-            <h5 style="font-weight: 800; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px;">新增藥品</h5>
-            <div class="row g-4">
-                <div class="col-12">
-                    <label class="add-form-label">藥品名稱 <span class="text-danger">*</span></label>
-                    <input type="text" id="addName" class="form-control add-form-input" placeholder="例：Citric acid anhydrous">
+    <!-- 🌟 將新增藥品改成 Modal 彈出視窗 -->
+    <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                <div class="modal-header" style="background-color: #f8fafc; border-radius: 16px 16px 0 0; border-bottom: 1px solid #e2e8f0;">
+                    <h5 class="modal-title" style="font-weight: 800; color: #1e293b;">✨ 新增藥品</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="col-md-6">
-                    <label class="add-form-label">分類 <span class="text-danger">*</span></label>
-                    <select id="addSheet" class="form-select add-form-input" onchange="handleAddSheetChange()"></select>
-                    <div class="input-group mt-2">
-                        <input type="text" id="newSheetName" class="form-control add-form-input" placeholder="新增分類..." style="border-right: none;">
-                        <button class="btn btn-outline-secondary" type="button" onclick="addNewSheetOption()" style="background: white; border-left: none; border-color: #cbd5e1; font-weight: bold; color: #475569;">＋ 加入</button>
+                <div class="modal-body p-4">
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <label class="add-form-label">藥品名稱 <span class="text-danger">*</span></label>
+                            <input type="text" id="addName" class="form-control add-form-input" placeholder="例：Citric acid anhydrous">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="add-form-label">分類 <span class="text-danger">*</span></label>
+                            <select id="addSheet" class="form-select add-form-input" onchange="handleAddSheetChange()"></select>
+                            <div class="input-group mt-2">
+                                <input type="text" id="newSheetName" class="form-control add-form-input" placeholder="新增分類..." style="border-right: none;">
+                                <button class="btn btn-outline-secondary" type="button" onclick="addNewSheetOption()" style="background: white; border-left: none; border-color: #cbd5e1; font-weight: bold; color: #475569;">＋ 加入</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="add-form-label">位置 <small style="color: #94a3b8; font-weight: normal;">跟隨分類</small></label>
+                            <select id="addLocation" class="form-select add-form-input">
+                                <option value="">- 未標示 -</option>
+                            </select>
+                            <div id="addLocHint" style="font-size: 0.8rem; color: #64748b; margin-top: 6px;">請先選擇分類</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="add-form-label">CAS NO.</label>
+                            <input type="text" id="addCas" class="form-control add-form-input">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="add-form-label">濃度</label>
+                            <input type="text" id="addConc" class="form-control add-form-input">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="add-form-label">規格</label>
+                            <input type="text" id="addSpec" class="form-control add-form-input">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="add-form-label">廠商</label>
+                            <select id="addVendor" class="form-select add-form-input"></select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="add-form-label">使用狀態</label>
+                            <select id="addStatus" class="form-select add-form-input">
+                                <option value="">未填</option><option value="100%">100%</option><option value="90%">90%</option><option value="80%">80%</option><option value="70%">70%</option><option value="60%">60%</option><option value="50%">50%</option><option value="40%">40%</option><option value="30%">30%</option><option value="20%">20%</option><option value="10%">10%</option><option value="0%">0%</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="add-form-label">編號</label>
+                            <input type="text" id="addNum" class="form-control add-form-input">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="add-form-label">GHS</label>
+                            <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 12px; display: flex; align-items: center; height: 38px; background: white;">
+                                <input class="form-check-input mt-0 me-2" type="checkbox" id="addGhs" style="transform: scale(1.1); cursor: pointer;">
+                                <label class="form-check-label mb-0" for="addGhs" id="addGhsLabel" style="cursor: pointer; color: #475569; font-weight: 600;">否 (無標籤)</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <label class="add-form-label">位置 <small style="color: #94a3b8; font-weight: normal;">跟隨分類</small></label>
-                    <select id="addLocation" class="form-select add-form-input">
-                        <option value="">- 未標示 -</option>
-                    </select>
-                    <div id="addLocHint" style="font-size: 0.8rem; color: #64748b; margin-top: 6px;">請先選擇分類</div>
-                </div>
-                <div class="col-md-6">
-                    <label class="add-form-label">CAS NO.</label>
-                    <input type="text" id="addCas" class="form-control add-form-input">
-                </div>
-                <div class="col-md-6">
-                    <label class="add-form-label">濃度</label>
-                    <input type="text" id="addConc" class="form-control add-form-input">
-                </div>
-                <div class="col-md-6">
-                    <label class="add-form-label">規格</label>
-                    <input type="text" id="addSpec" class="form-control add-form-input">
-                </div>
-                <div class="col-md-6">
-                    <label class="add-form-label">廠商</label>
-                    <select id="addVendor" class="form-select add-form-input"></select>
-                </div>
-                <div class="col-md-6">
-                    <label class="add-form-label">使用狀態</label>
-                    <select id="addStatus" class="form-select add-form-input">
-                        <option value="">未填</option><option value="100%">100%</option><option value="90%">90%</option><option value="80%">80%</option><option value="70%">70%</option><option value="60%">60%</option><option value="50%">50%</option><option value="40%">40%</option><option value="30%">30%</option><option value="20%">20%</option><option value="10%">10%</option><option value="0%">0%</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="add-form-label">編號</label>
-                    <input type="text" id="addNum" class="form-control add-form-input">
-                </div>
-                <div class="col-md-6">
-                    <label class="add-form-label">GHS</label>
-                    <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 12px; display: flex; align-items: center; height: 38px; background: white;">
-                        <input class="form-check-input mt-0 me-2" type="checkbox" id="addGhs" style="transform: scale(1.1); cursor: pointer;">
-                        <label class="form-check-label mb-0" for="addGhs" id="addGhsLabel" style="cursor: pointer; color: #475569; font-weight: 600;">否 (無標籤)</label>
-                    </div>
-                </div>
-                <div class="col-12 text-end mt-4">
-                    <button class="btn" style="background-color: #334155; color: white; font-weight: 600; padding: 8px 24px; border-radius: 8px;" onclick="submitNewChemical()" id="addChemBtn">＋ 新增藥品</button>
+                <div class="modal-footer" style="border-top: none;">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 8px; font-weight: 600;">取消</button>
+                    <button type="button" class="btn text-white" onclick="submitNewChemical()" id="addChemBtn" style="border-radius: 8px; font-weight: 600; background-color: #4338ca; border: none;">確認新增</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- 編輯藥品資料的 Modal 視窗 -->
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
@@ -281,13 +297,14 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // 🔴 請確保這裡是你專屬的 Google 網址
         const API_URL = "https://script.google.com/macros/s/AKfycbxJBLB2yQgs17l9fzbSVBNd94OseyyQrX-PlbfeZkrbyRpCYHPxiK8d62tz25RfevWUeQ/exec";
 
         const svgEdit = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`;
         const svgDelete = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`;
 
         let chemicalData = []; let buyerList = []; let memoList = []; let locationsMap = {}; let vendorList = []; 
-        let searchTimeout = null; let currentEditRow = null; let editModalInstance = null;
+        let searchTimeout = null; let currentEditRow = null; let editModalInstance = null; let addModalInstance = null;
         const opts = ['100%','90%','80%','70%','60%','50%','40%','30%','20%','10%','0%'];
         const LOCAL_STORAGE_KEY = 'LPC_LAB_DATA_V7';
 
@@ -332,6 +349,8 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             editModalInstance = new bootstrap.Modal(document.getElementById('editModal')); 
+            addModalInstance = new bootstrap.Modal(document.getElementById('addModal')); // 初始化新增視窗
+
             let activeData = null; const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
             if (localData) { try { const parsed = JSON.parse(localData); if (parsed.data && parsed.data.length > 0) activeData = parsed; } catch(e) {} }
 
@@ -359,10 +378,30 @@
 
         function initUI() {
             document.getElementById('tableWrapper').style.display = 'block'; document.getElementById('memoSection').style.display = 'block';
-            document.getElementById('addChemicalSection').style.display = 'block';
             
             const searchInput = document.getElementById('searchInput'); searchInput.disabled = false; searchInput.placeholder = `🔍 智慧搜尋 ${chemicalData.length} 筆資料...`;
+            document.getElementById('openAddBtn').disabled = false; // 解除新增按鈕的鎖定
+
             renderDropdowns(); renderAddFormDropdowns(); renderMemos(); updateBuyList(); displayData(chemicalData);
+        }
+
+        // 🌟 開啟新增藥品視窗並清空舊資料
+        function openAddModal() {
+            document.getElementById('addName').value = '';
+            document.getElementById('addSheet').value = '';
+            document.getElementById('addLocation').innerHTML = '<option value="">- 未標示 -</option>';
+            document.getElementById('addLocHint').innerText = '請先選擇分類';
+            document.getElementById('addCas').value = '';
+            document.getElementById('addConc').value = '';
+            document.getElementById('addSpec').value = '';
+            document.getElementById('addVendor').value = '';
+            document.getElementById('addNum').value = '';
+            document.getElementById('addStatus').value = '';
+            document.getElementById('addGhs').checked = false;
+            document.getElementById('addGhsLabel').innerText = '否 (無標籤)';
+            document.getElementById('addGhsLabel').style.color = '#475569';
+            
+            addModalInstance.show();
         }
 
         function forceRefresh() {
@@ -434,7 +473,7 @@
             if(!sheet) return alert('「分類」為必填欄位！');
             
             const btn = document.getElementById('addChemBtn');
-            btn.disabled = true; btn.innerText = "新增中...";
+            btn.disabled = true; btn.innerText = "處理中...";
 
             let locVal = document.getElementById('addLocation').value;
             if(locVal === 'ADD_NEW') {
@@ -456,24 +495,15 @@
 
             apiCall('addChemical', { sheetName: sheet, newRowData: newRowData })
             .then(success => {
-                btn.disabled = false; btn.innerText = "＋ 新增藥品";
+                btn.disabled = false; btn.innerText = "確認新增";
                 if(success) {
-                    document.getElementById('addName').value = '';
-                    document.getElementById('addCas').value = '';
-                    document.getElementById('addConc').value = '';
-                    document.getElementById('addSpec').value = '';
-                    document.getElementById('addNum').value = '';
-                    document.getElementById('addStatus').value = '';
-                    document.getElementById('addGhs').checked = false;
-                    document.getElementById('addGhsLabel').innerText = '否 (無標籤)';
-                    document.getElementById('addGhsLabel').style.color = '#475569';
-                    
+                    addModalInstance.hide();
                     alert('✅ 藥品新增成功！');
                     forceRefresh(); 
                 } else {
                     alert("新增失敗！");
                 }
-            }).catch(e => { btn.disabled = false; btn.innerText = "＋ 新增藥品"; alert("連線異常！"); });
+            }).catch(e => { btn.disabled = false; btn.innerText = "確認新增"; alert("連線異常！"); });
         }
 
 
@@ -495,7 +525,6 @@
             return `<div style="display:flex;gap:2px;justify-content:center;"><select class="date-select ${prefix}-m-${r['_rowIndex']}" onchange="syncDateSelect('${r['來源分頁']}', ${r['_rowIndex']}, ${r[colIndexKey]}, '${colName}', '${prefix}')">${mOpts}</select><select class="date-select ${prefix}-d-${r['_rowIndex']}" onchange="syncDateSelect('${r['來源分頁']}', ${r['_rowIndex']}, ${r[colIndexKey]}, '${colName}', '${prefix}')">${dOpts}</select></div>`;
         }
 
-        // 🌟 拔除 50 筆限制，全量載入！
         function displayData(data) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = data.map(r => {
