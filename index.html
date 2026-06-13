@@ -114,7 +114,7 @@
         <div class="memo-card" id="memoSection">
             <div class="memo-title">藥品備忘錄</div>
             <div class="memo-input-group">
-                <!-- 🌟 新增：與請購人同步的留言者選單 -->
+                <!-- 🌟 備忘錄下拉選單 -->
                 <select id="memoAuthorSelect" class="memo-author-select">
                     <option value="">👤 留言者...</option>
                 </select>
@@ -162,8 +162,8 @@
     </div>
 
     <script>
-        // 🔴 極度重要：請務必把下面引號裡面的文字，換成你的 Google Apps Script 部署網址！
-        const API_URL = "在此貼上你的_Google_Apps_Script_部署網址";
+        // 🔴 這裡已經幫你填好你的 Google 網址了！
+        const API_URL = "https://script.google.com/macros/s/AKfycbxJBLB2yQgs17l9fzbSVBNd94OseyyQrX-PlbfeZkrbyRpCYHPxiK8d62tz25RfevWUeQ/exec";
 
         let chemicalData = []; let buyerList = []; let memoList = []; let searchTimeout = null; 
         const opts = ['100%','90%','80%','70%','60%','50%','40%','30%','20%','10%','0%'];
@@ -220,7 +220,7 @@
         function initUI() {
             document.getElementById('tableWrapper').style.display = 'block'; document.getElementById('memoSection').style.display = 'block';
             const searchInput = document.getElementById('searchInput'); searchInput.disabled = false; searchInput.placeholder = `🔍 智慧搜尋 ${chemicalData.length} 筆資料...`;
-            renderMemoAuthorSelect(); // 載入留言者選單
+            renderMemoAuthorSelect();
             renderMemos(); updateBuyList(); displayData(chemicalData);
         }
 
@@ -247,10 +247,9 @@
             }).catch(err => { btn.classList.remove('spinning'); searchInput.disabled = false; searchInput.placeholder = oldPlaceholder; alert("更新失敗，請檢查網路連線。"); });
         }
 
-        // 🌟 新增：渲染備忘錄的留言者下拉選單 (和請購人名單同步)
         function renderMemoAuthorSelect() {
             const select = document.getElementById('memoAuthorSelect');
-            let currentVal = select.value; // 記住目前選的人
+            let currentVal = select.value; 
             let html = '<option value="">👤 留言者...</option>';
             buyerList.forEach(b => { html += `<option value="${b}">${b}</option>`; });
             select.innerHTML = html;
@@ -317,7 +316,6 @@
             else { memoSection.style.display = 'block'; const hasToBuy = chemicalData.some(r => String(r['需訂購'] || '').toLowerCase() === 'true'); buyListContainer.style.display = hasToBuy ? 'block' : 'none'; }
         }
 
-        // 🌟 修改：渲染備忘錄時，加上留言者的黃色標籤
         function renderMemos() {
             const container = document.getElementById('memoListContainer');
             if (memoList.length === 0) { container.innerHTML = '<div class="text-center text-muted" style="font-size:0.85rem;">目前沒有備忘錄。</div>'; return; }
@@ -327,7 +325,6 @@
             }).join('');
         }
 
-        // 🌟 修改：送出留言時，強制檢查是否選了留言者
         function addNewMemo() {
             const input = document.getElementById('memoInput'); 
             const authorSelect = document.getElementById('memoAuthorSelect');
@@ -362,14 +359,12 @@
                     if (val === 'ADD_NEW') {
                         apiCall('addBuyer', {name: targetName}).then(updatedList => { buyerList = updatedList; return apiCall('updateSheetStatus', {sheetName: sheetName, rowIndex: rowIndex, colIndex: colIndex, newValue: targetName}); }).then(() => {
                             let r = chemicalData.find(x => x['來源分頁']===sheetName && x['_rowIndex']===rowIndex); if(r) { r['請購人'] = targetName; saveToLocal(); } 
-                            // 🌟 同步更新備忘錄下拉選單
                             renderMemoAuthorSelect();
                             displayData(chemicalData); updateBuyList();
                         }).catch(e => { selectElem.disabled = false; selectElem.value = originalVal; alert('操作失敗！'); });
                     } else {
                         apiCall('removeBuyer', {name: targetName}).then(updatedList => { 
                             buyerList = updatedList; chemicalData.forEach(r => { if(String(r['請購人']) === targetName) r['請購人'] = ''; }); saveToLocal(); 
-                            // 🌟 同步更新備忘錄下拉選單
                             renderMemoAuthorSelect();
                             displayData(chemicalData); updateBuyList(); alert(`已刪除人員「${targetName}」。`); 
                         }).catch(e => { selectElem.disabled = false; selectElem.value = originalVal; alert('操作失敗！'); });
