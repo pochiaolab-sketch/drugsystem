@@ -23,9 +23,7 @@
         .memo-title::before { content: '📌'; margin-right: 6px; }
         .memo-input-group { display: flex; gap: 8px; margin-bottom: 10px; }
         
-        /* 🌟 新增：備忘錄人員下拉選單樣式 */
         .memo-author-select { border-radius: 10px; border: 1px solid #fcd34d; padding: 8px 12px; font-size: 0.95rem; outline: none; background: #fffbeb; color: #92400e; font-weight: 600; cursor: pointer; flex-shrink: 0; }
-        
         .memo-input { flex-grow: 1; border-radius: 10px; border: 1px solid #fcd34d; padding: 8px 12px; font-size: 0.95rem; outline: none; background: #ffffff; transition: 0.3s; }
         .memo-btn { background: #fbbf24; color: #78350f; font-weight: 700; border: none; border-radius: 10px; padding: 8px 16px; cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 0.9rem; }
         .memo-item { background: #ffffff; padding: 10px 14px; border-radius: 10px; border-left: 4px solid #fbbf24; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;}
@@ -114,11 +112,12 @@
         <div class="memo-card" id="memoSection">
             <div class="memo-title">藥品備忘錄</div>
             <div class="memo-input-group">
-                <!-- 🌟 備忘錄下拉選單 -->
-                <select id="memoAuthorSelect" class="memo-author-select">
+                <input type="text" id="memoInput" class="memo-input" placeholder="輸入藥品相關留言，如藥品資訊有誤，需藥品管理人員修改..." onkeypress="if(event.key==='Enter') addNewMemo()">
+                
+                <select id="memoAuthorSelect" class="memo-author-select" onchange="handleMemoAuthorAction(this)">
                     <option value="">👤 留言者...</option>
                 </select>
-                <input type="text" id="memoInput" class="memo-input" placeholder="輸入藥品相關留言，如藥品資訊有誤，需藥品管理人員修改..." onkeypress="if(event.key==='Enter') addNewMemo()">
+                
                 <button class="memo-btn" onclick="addNewMemo()">＋ 留言</button>
             </div>
             <div class="memo-list" id="memoListContainer"></div>
@@ -162,7 +161,6 @@
     </div>
 
     <script>
-        // 🔴 這裡已經幫你填好你的 Google 網址了！
         const API_URL = "https://script.google.com/macros/s/AKfycbxJBLB2yQgs17l9fzbSVBNd94OseyyQrX-PlbfeZkrbyRpCYHPxiK8d62tz25RfevWUeQ/exec";
 
         let chemicalData = []; let buyerList = []; let memoList = []; let searchTimeout = null; 
@@ -247,13 +245,45 @@
             }).catch(err => { btn.classList.remove('spinning'); searchInput.disabled = false; searchInput.placeholder = oldPlaceholder; alert("更新失敗，請檢查網路連線。"); });
         }
 
+        // 🌟 渲染下拉選單 (補回「新增/刪除」按鈕)
         function renderMemoAuthorSelect() {
             const select = document.getElementById('memoAuthorSelect');
             let currentVal = select.value; 
             let html = '<option value="">👤 留言者...</option>';
             buyerList.forEach(b => { html += `<option value="${b}">${b}</option>`; });
+            html += `<option disabled>──────</option><option value="ADD_NEW">➕ 新增...</option><option value="DELETE_USER">❌ 刪除...</option>`;
             select.innerHTML = html;
             if (buyerList.includes(currentVal)) select.value = currentVal;
+            else select.value = '';
+        }
+
+        // 🌟 新增：專屬備忘錄下拉選單的操作邏輯 (可以直接新增/刪除人員)
+        function handleMemoAuthorAction(selectElem) {
+            const val = selectElem.value;
+            if (val === 'ADD_NEW' || val === 'DELETE_USER') {
+                let actionStr = val === 'ADD_NEW' ? '新增' : '刪除';
+                let name = prompt(`請輸入要「${actionStr}」的人員名稱：`);
+                if (name && name.trim() !== '') {
+                    const targetName = name.trim();
+                    selectElem.disabled = true;
+                    if (val === 'ADD_NEW') {
+                        apiCall('addBuyer', {name: targetName}).then(updatedList => {
+                            buyerList = updatedList; saveToLocal(); renderMemoAuthorSelect(); displayData(chemicalData); updateBuyList();
+                            document.getElementById('memoAuthorSelect').value = targetName; // 自動選取剛新增的人
+                            selectElem.disabled = false;
+                        }).catch(e => { selectElem.disabled = false; selectElem.value = ''; alert('操作失敗！'); });
+                    } else {
+                        apiCall('removeBuyer', {name: targetName}).then(updatedList => {
+                            buyerList = updatedList; chemicalData.forEach(r => { if(String(r['請購人']) === targetName) r['請購人'] = ''; });
+                            saveToLocal(); renderMemoAuthorSelect(); displayData(chemicalData); updateBuyList();
+                            alert(`已刪除人員「${targetName}」。`);
+                            selectElem.disabled = false;
+                        }).catch(e => { selectElem.disabled = false; selectElem.value = ''; alert('操作失敗！'); });
+                    }
+                } else {
+                    selectElem.value = ''; // 如果按取消，重設為預設值
+                }
+            }
         }
 
         function formatStatus(s) { s = String(s || '').trim(); if (s === '1' || s === '1.0') return '100%'; if (s === '0') return '0%'; if (/^0\.[1-9]$/.test(s)) return (parseFloat(s)*100)+'%'; return s; }
