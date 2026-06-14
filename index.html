@@ -6,82 +6,92 @@
   <title>🧪 LPC lab 藥品管理系統</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  
   <style>
-    body { background-color: #f4f6f9; font-family: "Helvetica Neue", Arial, "細明體", sans-serif; color: #333; }
+    body { background-color: #f4f6f9; font-family: "Helvetica Neue", Arial, sans-serif; color: #333; }
     .navbar { background: linear-gradient(135deg, #4f46e5, #3b82f6); box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
     .card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .nav-tabs .nav-link { color: #4b5563; font-weight: 500; border: none; padding: 12px 20px; }
+    .nav-tabs .nav-link.active { color: #4f46e5; border-bottom: 3px solid #4f46e5; background: none; }
     .table-container { overflow-x: auto; background: white; border-radius: 8px; padding: 15px; }
     
-    /* 🐕 右下角浮動智慧對話框樣式 */
-    #chat-widget { position: fixed; bottom: 25px; right: 25px; z-index: 9999; font-family: sans-serif; }
-    
-    /* 浮動開啟按鈕（已更換為專屬狗狗頭像） */
+    /* 🐕 右下角智慧小狗對話組件樣式 */
+    #chat-widget { position: fixed; bottom: 25px; right: 25px; z-index: 9999; }
     #chat-btn { 
-      width: 65px; height: 65px; border-radius: 50%; 
+      width: 60px; height: 60px; border-radius: 50%; 
       background-color: #4f46e5; border: none; 
       box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3); 
       cursor: pointer; display: flex; align-items: center; justify-content: center; 
-      transition: transform 0.2s, background-color 0.2s; 
+      transition: transform 0.2s; 
     }
     #chat-btn:hover { transform: scale(1.08); background-color: #4338ca; }
-    #chat-btn img { width: 40px; height: 40px; object-fit: contain; }
+    #chat-btn img { width: 38px; height: 38px; object-fit: contain; }
     
-    /* 對話視窗主體 */
     #chat-box { 
       width: 380px; height: 520px; background: white; 
       border-radius: 16px; box-shadow: 0 12px 36px rgba(0,0,0,0.15); 
       display: none; flex-direction: column; overflow: hidden; 
-      position: absolute; bottom: 85px; right: 0; 
-      transition: all 0.3s ease;
+      position: absolute; bottom: 80px; right: 0; 
     }
-    
-    /* 對話框頂部 */
     .chat-header { background: linear-gradient(135deg, #4f46e5, #3b82f6); color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; font-weight: bold; }
     .chat-header .title-area { display: flex; align-items: center; gap: 10px; }
     .chat-header img { width: 28px; height: 28px; background: white; border-radius: 50%; padding: 2px; }
-    .chat-header .close-btn { background: none; border: none; color: white; font-size: 22px; cursor: pointer; opacity: 0.8; }
-    .chat-header .close-btn:hover { opacity: 1; }
+    .chat-header .close-btn { background: none; border: none; color: white; font-size: 22px; cursor: pointer; }
     
-    /* 對話紀錄區 */
     .chat-body { flex: 1; padding: 15px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 12px; }
-    .msg { max-width: 82%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5; word-break: break-all; }
-    
-    /* AI 回覆泡泡（左側） */
+    .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5; word-break: break-all; }
     .msg.bot { background: white; align-self: flex-start; color: #1e293b; box-shadow: 0 2px 6px rgba(0,0,0,0.04); border-left: 4px solid #3b82f6; }
-    .msg.bot p { margin-bottom: 0; }
-    .msg.bot pre { background: #f1f5f9; padding: 8px; border-radius: 6px; font-size: 12px; margin-top: 5px; overflow-x: auto; }
+    .msg.user { background: #4f46e5; align-self: flex-end; color: white; }
     
-    /* 使用者發言泡泡（右側） */
-    .msg.user { background: #4f46e5; align-self: flex-end; color: white; box-shadow: 0 2px 6px rgba(79,70,229,0.2); }
-    
-    /* 對話框底部輸入區 */
-    .chat-footer { padding: 12px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; align-items: center; }
-    .chat-footer input { flex: 1; border: 1px solid #cbd5e1; padding: 9px 16px; border-radius: 24px; font-size: 14px; outline: none; transition: border-color 0.2s; }
-    .chat-footer input:focus { border-color: #4f46e5; }
-    .chat-footer button { background: #4f46e5; color: white; border: none; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s; }
-    .chat-footer button:hover { background-color: #4338ca; }
+    .chat-footer { padding: 12px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; }
+    .chat-footer input { flex: 1; border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 24px; font-size: 14px; outline: none; }
+    .chat-footer button { background: #4f46e5; color: white; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
   </style>
 </head>
 <body>
 
+  <script>
+    window.serverData = <?!= serverData ?>;
+  </script>
+
   <nav class="navbar navbar-expand-lg navbar-dark mb-4">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#"><i class="fas fa-flask me-2"></i>LPC Lab 藥品管理系統</a>
-      <button class="btn btn-light btn-sm" onclick="refreshSystemData()"><i class="fas fa-sync-alt me-1"></i>強制同步雲端</button>
+    <div class="container-fluid px-4">
+      <a class="navbar-brand fw-bold" href="#"><i class="fas fa-flask me-2"></i>LPC Lab 藥品管理系統</a>
+      <button class="btn btn-light btn-sm fw-bold text-primary" onclick="refreshSystemData()">
+        <i class="fas fa-sync-alt me-1"></i>強制同步雲端
+      </button>
     </div>
   </nav>
 
   <div class="container-fluid px-4">
-    <div class="row">
-      <div class="col-12">
+    <ul class="nav nav-tabs mb-4" id="systemTabs" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory-panel" type="button"><i class="fas fa-boxes me-2"></i>藥品庫存清單</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="memo-tab" data-bs-toggle="tab" data-bs-target="#memo-panel" type="button"><i class="fas fa-sticky-note me-2"></i>佈告欄備忘錄</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#config-panel" type="button"><i class="fas fa-users-cog me-2"></i>請購人員管理</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="systemTabsContent">
+      <div class="tab-pane fade show active" id="inventory-panel" role="tabpanel">
         <div class="card p-4">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="m-0 fw-bold text-secondary"><i class="fas fa-list me-2"></i>實驗室現存試劑清單</h5>
-            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal"><i class="fas fa-plus me-1"></i>新增登記藥品</button>
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+            <div class="d-flex gap-2 align-items-center">
+              <input type="text" id="tableSearch" class="form-control form-control-sm" placeholder="輸入名稱/CAS號進行即時搜尋..." oninput="filterInventoryTable()" style="width: 260px;">
+              <select id="filterTab" class="form-select form-select-sm" onchange="filterInventoryTable()" style="width: 150px;">
+                <option value="">所有分頁</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addModal">
+              <i class="fas fa-plus me-1"></i>新增登記藥品
+            </button>
           </div>
+          
           <div class="table-container">
-            <table class="table table-hover align-middle" id="mainTable">
+            <table class="table table-hover align-middle">
               <thead class="table-light">
                 <tr>
                   <th>來源分頁</th><th>藥品名稱</th><th>濃度</th><th>CAS NO.</th><th>規格</th><th>位置</th><th>狀態</th><th>需訂購</th><th>操作</th>
@@ -93,31 +103,116 @@
           </div>
         </div>
       </div>
+
+      <div class="tab-pane fade" id="memo-panel" role="tabpanel">
+        <div class="card p-4">
+          <div class="row g-3 mb-4">
+            <div class="col-md-8">
+              <input type="text" id="memoText" class="form-control" placeholder="撰寫新的實驗室提醒或請購備忘錄...">
+            </div>
+            <div class="col-md-2">
+              <select id="memoAuthor" class="form-select">
+                <option value="實驗室成員">填寫人</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-success w-100 fw-bold" onclick="addNewMemo()">發佈留言</button>
+            </div>
+          </div>
+          <div class="row row-cols-1 row-cols-md-3 g-3" id="memoContainer">
+            </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="config-panel" role="tabpanel">
+        <div class="card p-4" style="max-width: 500px;">
+          <h6 class="fw-bold text-secondary mb-3"><i class="fas fa-user-plus me-2"></i>動態增刪請購人員名單</h6>
+          <div class="input-group mb-3">
+            <input type="text" id="newBuyerName" class="form-control" placeholder="輸入人員縮寫代號 (如: WYC)">
+            <button class="btn btn-primary fw-bold" onclick="addNewBuyer()">新增人員</button>
+          </div>
+          <ul class="list-group" id="buyerListGroup">
+            </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">🧪 新增登記藥品</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addChemicalForm">
+            <div class="mb-2">
+              <label class="form-label small fw-bold">來源分頁櫃位</label>
+              <input type="text" id="add_sheet" class="form-control form-control-sm" placeholder="例如: 藥品A" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold">藥品名稱</label>
+              <input type="text" id="add_name" class="form-control form-control-sm" required>
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col">
+                <label class="form-label small fw-bold">濃度</label>
+                <input type="text" id="add_conc" class="form-control form-control-sm">
+              </div>
+              <div class="col">
+                <label class="form-label small fw-bold">CAS NO.</label>
+                <input type="text" id="add_cas" class="form-control form-control-sm">
+              </div>
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col">
+                <label class="form-label small fw-bold">規格</label>
+                <input type="text" id="add_spec" class="form-control form-control-sm">
+              </div>
+              <div class="col">
+                <label class="form-label small fw-bold">廠牌廠商</label>
+                <input type="text" id="add_vendor" class="form-control form-control-sm">
+              </div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col">
+                <label class="form-label small fw-bold">存放位置</label>
+                <input type="text" id="add_loc" class="form-control form-control-sm">
+              </div>
+              <div class="col">
+                <label class="form-label small fw-bold">內部編號</label>
+                <input type="text" id="add_num" class="form-control form-control-sm">
+              </div>
+            </div>
+            <div class="mb-3 form-check">
+              <input class="form-check-input" type="checkbox" id="add_ghs">
+              <label class="form-check-label small fw-bold">需包含 GHS 標籤勾選框</label>
+            </div>
+            <button type="button" class="btn btn-primary w-100 fw-bold btn-sm" onclick="submitAddChemical()">確認存入雲端表格</button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 
   <div id="chat-widget">
     <button id="chat-btn" onclick="toggleChatBox()">
-      <img src="https://cdn-icons-png.flaticon.com/512/616/616408.png" alt="LPC助理">
+      <img src="https://cdn-icons-png.flaticon.com/512/616/616408.png" alt="🐕">
     </button>
-    
     <div id="chat-box">
       <div class="chat-header">
         <div class="title-area">
-          <img src="https://cdn-icons-png.flaticon.com/512/616/616408.png" alt="dog">
+          <img src="https://cdn-icons-png.flaticon.com/512/616/616408.png" alt="🐕">
           <span>林伯樵AI 助理</span>
         </div>
         <button class="close-btn" onclick="toggleChatBox()">&times;</button>
       </div>
-      
       <div class="chat-body" id="chatBody">
-        <div class="msg bot">
-          你好！我是林伯樵AI 小管家 🤖
-        </div>
+        <div class="msg bot">你好！我是林伯樵AI 小管家 🤖</div>
       </div>
-      
       <div class="chat-footer">
-        <input type="text" id="chatInput" placeholder="詢問庫存位置或有機化學問題..." onkeypress="handleChatKeyPress(event)">
+        <input type="text" id="chatInput" placeholder="詢問庫存位置或多步驟化學機制..." onkeypress="handleChatKeyPress(event)">
         <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
       </div>
     </div>
@@ -125,15 +220,15 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // 頁面初始化
+    let globalData = [];
+
+    // 系統冷啟動初始化
     document.addEventListener("DOMContentLoaded", function() {
-      // 解析後端 doGet 預先注入的數據
       if (window.serverData) {
-        renderInventory(window.serverData);
+        initSystem(window.serverData);
       }
     });
 
-    // 通用後端 API 請求封裝（與 doPost 閘道對接）
     function apiCall(action, data = {}) {
       return fetch('', {
         method: 'POST',
@@ -147,7 +242,182 @@
       });
     }
 
-    // 側邊欄開關切換
+    function initSystem(sysData) {
+      globalData = sysData.data || [];
+      renderInventoryTable(globalData);
+      renderMemos(sysData.memos || []);
+      renderBuyers(sysData.buyers || []);
+      
+      // 動態更新下拉選單的分頁標籤
+      const filterTab = document.getElementById('filterTab');
+      filterTab.innerHTML = '<option value="">所有分頁</option>';
+      if(sysData.locationsMap) {
+        Object.keys(sysData.locationsMap).forEach(sheet => {
+          filterTab.innerHTML += `<option value="${sheet}">${sheet}</option>`;
+        });
+      }
+    }
+
+    // 庫存表格渲染引擎
+    function renderInventoryTable(data) {
+      const tbody = document.getElementById('inventoryBody');
+      tbody.innerHTML = '';
+      if(data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">查無任何與關鍵字吻合的庫存數據</td></tr>';
+        return;
+      }
+      data.forEach(r => {
+        const tr = document.createElement('tr');
+        const checkedAttr = (r['需訂購'] === 'true' || r['需訂購'] === true) ? 'checked' : '';
+        tr.innerHTML = `
+          <td><span class="badge bg-secondary">${r['來源分頁']||'-'}</span></td>
+          <td class="fw-bold">${r['藥品名稱']||'-'}</td>
+          <td>${r['濃度']||'-'}</td>
+          <td><code>${r['CAS NO.']||r['CAS  NO.']||'-'}</code></td>
+          <td>${r['規格']||'-'}</td>
+          <td><i class="fas fa-map-marker-alt text-danger me-1"></i>${r['位置']||'-'}</td>
+          <td>
+            <select class="form-select form-select-sm py-0" onchange="updateStatus('${r['來源分頁']}', ${r._rowIndex}, ${r._statusColIndex}, this.value)">
+              <option value="充足" ${r['ប្រើប្រាស់狀態'] === '充足' || r['使用狀態'] === '充足' ? 'selected' : ''}>充足</option>
+              <option value="一般" ${r['使用狀態'] === '一般' ? 'selected' : ''}>一般</option>
+              <option value="耗盡" ${r['使用狀態'] === '耗盡' ? 'selected' : ''}>耗盡</option>
+            </select>
+          </td>
+          <td>
+            <input type="checkbox" class="form-check-input" ${checkedAttr} onchange="toggleOrder('${r['來源分頁']}', ${r._rowIndex}, this, ${r._orderColIndex}, ${r._buyerColIndex}, ${r._reqDateColIndex}, ${r._orderDateColIndex})">
+          </td>
+          <td>
+            <button class="btn btn-link text-danger p-0 m-0" onclick="deleteChemicalRow('${r['來源分頁']}', ${r._rowIndex})"><i class="fas fa-trash-alt"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 前端即時過濾功能
+    function filterInventoryTable() {
+      const keyword = document.getElementById('tableSearch').value.toLowerCase().trim();
+      const sheetFilter = document.getElementById('filterTab').value;
+      
+      const filtered = globalData.filter(r => {
+        const matchSheet = !sheetFilter || r['來源分頁'] === sheetFilter;
+        const name = String(r['藥品名稱']||'').toLowerCase();
+        const cas = String(r['CAS NO.']||r['CAS  NO.']||'').toLowerCase();
+        return matchSheet && (!keyword || name.includes(keyword) || cas.includes(keyword));
+      });
+      renderInventoryTable(filtered);
+    }
+
+    function updateStatus(sheet, row, col, val) {
+      if(!col) return;
+      apiCall('updateSheetStatus', { sheetName: sheet, rowIndex: row, colIndex: col, newValue: val });
+    }
+
+    function toggleOrder(sheet, row, cb, orderIdx, buyerIdx, reqIdx, orderDateIdx) {
+      const map = { order: orderIdx, buyer: buyerIdx, reqDate: reqIdx, orderDate: orderDateIdx };
+      apiCall('toggleNeedToOrder', { sheetName: sheet, rowIndex: row, isChecked: cb.checked, colMap: map });
+    }
+
+    function deleteChemicalRow(sheet, row) {
+      if(confirm('確定要從雲端試算表中移除此列藥品資料嗎？')) {
+        apiCall('deleteChemical', { sheetName: sheet, rowIndex: row }).then(() => refreshSystemData());
+      }
+    }
+
+    function submitAddChemical() {
+      const sheet = document.getElementById('add_sheet').value.trim();
+      const name = document.getElementById('add_name').value.trim();
+      if(!sheet || !name) { alert('來源分頁與藥品名稱不可空白！'); return; }
+      
+      const rowData = {
+        '藥品名稱': name,
+        '濃度': document.getElementById('add_conc').value.trim(),
+        'CAS NO.': document.getElementById('add_cas').value.trim(),
+        '規格': document.getElementById('add_spec').value.trim(),
+        '廠商': document.getElementById('add_vendor').value.trim(),
+        '位置': document.getElementById('add_loc').value.trim(),
+        '編號': document.getElementById('add_num').value.trim(),
+        'GHS': document.getElementById('add_ghs').checked
+      };
+      
+      apiCall('addChemical', { sheetName: sheet, newRowData: rowData }).then(() => {
+        bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
+        document.getElementById('addChemicalForm').reset();
+        refreshSystemData();
+      });
+    }
+
+    // 佈告欄備忘錄渲染
+    function renderMemos(memos) {
+      const container = document.getElementById('memoContainer');
+      container.innerHTML = '';
+      memos.forEach(m => {
+        container.innerHTML += `
+          <div class="col">
+            <div class="card p-3 h-100 bg-light border-start border-success border-3">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="badge bg-success small">${m.author}</span>
+                <small class="text-muted">${m.time}</small>
+              </div>
+              <p class="card-text small text-dark flex-grow-1">${m.text}</p>
+              <div class="text-end">
+                <button class="btn btn-link text-muted btn-sm p-0 m-0" onclick="deleteMemoItem('${m.id}')"><i class="fas fa-times me-1"></i>刪除</button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function addNewMemo() {
+      const text = document.getElementById('memoText').value.trim();
+      const author = document.getElementById('memoAuthor').value;
+      if(!text) return;
+      apiCall('addMemo', { text: text, author: author }).then(memos => {
+        document.getElementById('memoText').value = '';
+        renderMemos(memos);
+      });
+    }
+
+    function deleteMemoItem(id) {
+      apiCall('deleteMemo', { id: id }).then(memos => renderMemos(memos));
+    }
+
+    // 請購人員渲染
+    function renderBuyers(buyers) {
+      const group = document.getElementById('buyerListGroup');
+      const select = document.getElementById('memoAuthor');
+      group.innerHTML = '';
+      select.innerHTML = '<option value="實驗室成員">填寫人</option>';
+      buyers.forEach(b => {
+        group.innerHTML += `
+          <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+            <span><i class="fas fa-user text-secondary me-2"></i>${b}</span>
+            <button class="btn btn-link text-danger p-0 btn-sm m-0" onclick="removeBuyerItem('${b}')"><i class="fas fa-user-minus"></i></button>
+          </li>
+        `;
+        select.innerHTML += `<option value="${b}">${b}</option>`;
+      });
+    }
+
+    function addNewBuyer() {
+      const name = document.getElementById('newBuyerName').value.trim();
+      if(!name) return;
+      apiCall('addBuyer', { name: name }).then(buyers => {
+        document.getElementById('newBuyerName').value = '';
+        renderBuyers(buyers);
+      });
+    }
+
+    function removeBuyerItem(name) {
+      apiCall('removeBuyer', { name: name }).then(buyers => renderBuyers(buyers));
+    }
+
+    function refreshSystemData() {
+      apiCall('forceRefreshData').then(raw => initSystem(JSON.parse(raw)));
+    }
+
+    // 對話視窗開關
     function toggleChatBox() {
       const box = document.getElementById('chat-box');
       box.style.display = (box.style.display === 'flex') ? 'none' : 'flex';
@@ -158,88 +428,46 @@
       }
     }
 
-    function handleChatKeyPress(e) {
-      if (e.key === 'Enter') sendChatMessage();
-    }
+    function handleChatKeyPress(e) { if (e.key === 'Enter') sendChatMessage(); }
 
-    // 核心：發送訊息給後端 NVIDIA 動態路由大腦
+    // 發送聊天訊息至後台路由
     function sendChatMessage() {
       const input = document.getElementById('chatInput');
       const msg = input.value.trim();
       if (!msg) return;
 
       const body = document.getElementById('chatBody');
-      
-      // 1. 渲染使用者發言
-      const userDiv = document.createElement('div');
-      userDiv.className = 'msg user';
-      userDiv.innerText = msg;
-      body.appendChild(userDiv);
-      
+      const uDiv = document.createElement('div');
+      uDiv.className = 'msg user';
+      uDiv.innerText = msg;
+      body.appendChild(uDiv);
       input.value = '';
       body.scrollTop = body.scrollHeight;
 
-      // 2. 渲染正在輸入中的 Loading 狀態
-      const loadDiv = document.createElement('div');
-      loadDiv.className = 'msg bot text-muted animate-pulse';
-      loadDiv.id = 'ai-loading-bubble';
-      loadDiv.innerText = '🐕 正在思考推導中...';
-      body.appendChild(loadDiv);
+      const lDiv = document.createElement('div');
+      lDiv.className = 'msg bot text-muted';
+      lDiv.id = 'ai-loading';
+      lDiv.innerText = '🐕 正在思考推導中...';
+      body.appendChild(lDiv);
       body.scrollTop = body.scrollHeight;
 
-      // 3. 呼叫後台 askGeminiAssistant 路由 (後台會自動轉接至 NVIDIA 大腦)
       apiCall('askGeminiAssistant', { userMessage: msg })
       .then(reply => {
-        document.getElementById('ai-loading-bubble').remove();
-        
-        const botDiv = document.createElement('div');
-        botDiv.className = 'msg bot';
-        
-        // 支援 Markdown 換行格式基本解析
-        botDiv.innerHTML = reply.replace(/\n/g, '<br>').replace(/\*(.*?)\*/g, '<strong>$1</strong>');
-        body.appendChild(botDiv);
+        document.getElementById('ai-loading').remove();
+        const bDiv = document.createElement('div');
+        bDiv.className = 'msg bot';
+        bDiv.innerHTML = reply.replace(/\n/g, '<br>').replace(/\*(.*?)\*/g, '<strong>$1</strong>');
+        body.appendChild(bDiv);
         body.scrollTop = body.scrollHeight;
       })
       .catch(err => {
-        document.getElementById('ai-loading-bubble').remove();
-        const errDiv = document.createElement('div');
-        errDiv.className = 'msg bot text-danger';
-        errDiv.innerText = '⚠️ 系統處理發生錯誤：' + err.message;
-        body.appendChild(errDiv);
+        document.getElementById('ai-loading').remove();
+        const eDiv = document.createElement('div');
+        eDiv.className = 'msg bot text-danger';
+        eDiv.innerText = '⚠️ 發生連線異常，請手動確認後台設定。';
+        body.appendChild(eDiv);
         body.scrollTop = body.scrollHeight;
       });
-    }
-
-    // 表格數據動態渲染（依庫存資料庫格式）
-    function renderInventory(rawJson) {
-      try {
-        const sys = JSON.parse(rawJson);
-        const tbody = document.getElementById('inventoryBody');
-        tbody.innerHTML = '';
-        if(!sys.data || sys.data.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">目前無庫存資料</td></tr>';
-          return;
-        }
-        sys.data.forEach(r => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td><span class="badge bg-secondary">${r['來源分頁']||'-'}</span></td>
-            <td class="fw-bold">${r['藥品名稱']||'-'}</td>
-            <td>${r['濃度']||'-'}</td>
-            <td><code>${r['CAS NO.']||r['CAS  NO.']||'-'}</code></td>
-            <td>${r['規格']||'-'}</td>
-            <td><i class="fas fa-map-marker-alt text-danger me-1"></i>${r['位置']||'-'}</td>
-            <td>${r['使用狀態']||'-'}</td>
-            <td><input type="checkbox" ${r['需訂購'] === 'true' || r['需訂購'] === true ? 'checked' : ''} disabled></td>
-            <td><button class="btn btn-outline-secondary btn-sm"><i class="fas fa-edit"></i></button></td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } catch(e) { console.error("渲染失敗:", e); }
-    }
-
-    function refreshSystemData() {
-      apiCall('forceRefreshData').then(newData => { alert('同步成功！'); renderInventory(newData); });
     }
   </script>
 </body>
