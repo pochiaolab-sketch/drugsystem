@@ -553,7 +553,7 @@
             }
         }
 
-        // 🌟 防呆搜尋核心邏輯
+        // 🌟 防呆搜尋核心邏輯 (修正 4-bromo 誤判問題)
         document.getElementById('searchInput').oninput = function() {
             clearTimeout(searchTimeout); 
             const originalTerm = this.value.trim(); 
@@ -562,17 +562,23 @@
             searchTimeout = setTimeout(() => { 
                 if(!originalTerm) return displayData(chemicalData); 
                 
-                const term = originalTerm.toLowerCase().replace(/[\s\-]/g, '');
+                const termLower = originalTerm.toLowerCase();
+                const cleanTerm = termLower.replace(/[\s\-]/g, '');
 
                 const filtered = chemicalData.filter(r => { 
-                    const rawName = String(r['藥品名稱'] || ''); 
-                    const rawCas = String(r['CAS  NO.'] || r['CAS NO.'] || ''); 
-                    const cleanName = rawName.toLowerCase().replace(/[\s\-]/g, '');
-                    const cleanCas = rawCas.toLowerCase().replace(/[\s\-]/g, '');
+                    const rawName = String(r['藥品名稱'] || '').toLowerCase(); 
+                    const rawCas = String(r['CAS  NO.'] || r['CAS NO.'] || '').toLowerCase(); 
+                    const cleanName = rawName.replace(/[\s\-]/g, '');
+                    const cleanCas = rawCas.replace(/[\s\-]/g, '');
 
-                    if (cleanName.includes(term) || cleanCas.includes(term)) return true;
-                    const isFuzzyMatch = originalTerm.length > 4 && rawName.toLowerCase().split(/[\s\-]+/).some(w => levenshtein(originalTerm.toLowerCase(), w) <= 2);
-                    return isFuzzyMatch;
+                    // 1. 最優先：精準包含比對
+                    if (cleanName.includes(cleanTerm) || cleanCas.includes(cleanTerm)) return true;
+
+                    // 2. 模糊搜尋：只有在「純英文字母」且長度 >= 4 時才啟動
+                    if (/^[a-z]+$/.test(termLower) && termLower.length >= 4) {
+                        return rawName.split(/[\s\-]+/).some(w => levenshtein(termLower, w) <= 1);
+                    }
+                    return false;
                 });
                 
                 displayData(filtered); 
