@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🧪 LPC lab 藥品系統</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body { background-color: #f5f7f9; font-family: -apple-system, sans-serif; padding-top: 15px; color: #334155; }
         .main-container { width: 100%; max-width: 100%; margin: 0 auto; padding: 0 10px; padding-bottom: 40px; }
@@ -19,10 +20,9 @@
         .search-input { border-radius: 12px; border: 1px solid #cbd5e1; padding: 12px 15px; font-size: 1rem; background-color: #f8fafc; transition: 0.3s; width: 100%; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .search-input:focus { outline: none; border-color: #4338ca; background-color: #ffffff; }
         
-        /* 🌟 備忘錄區塊：全面改為灰階配色 */
         .memo-card { background: #f8fafc; border-radius: 16px; padding: 15px 20px; margin-bottom: 15px; border: 2px dashed #cbd5e1; box-shadow: 0 4px 6px rgba(0,0,0,0.02); display: none; }
         .memo-title { font-weight: 800; color: #475569; margin-bottom: 10px; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
-        .memo-title::before { content: '📝'; margin-right: 6px; } /* 換成不會有紅色的筆記本符號 */
+        .memo-title::before { content: '📝'; margin-right: 6px; } 
         .memo-input-group { display: flex; gap: 8px; margin-bottom: 10px; }
         
         .memo-author-select { border-radius: 10px; border: 1px solid #cbd5e1; padding: 8px 12px; font-size: 0.95rem; outline: none; background: #f1f5f9; color: #475569; font-weight: 600; cursor: pointer; flex-shrink: 0; }
@@ -105,10 +105,18 @@
         #ai-chat-header { background: #4338ca; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         #ai-chat-close { cursor: pointer; font-size: 1.2rem; }
         #ai-chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 10px; }
-        .chat-msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; line-height: 1.5; word-wrap: break-word;}
+        .chat-msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.95rem; line-height: 1.6; word-wrap: break-word;}
         .chat-msg.user { align-self: flex-end; background: #4338ca; color: white; border-bottom-right-radius: 2px; }
+        
+        /* 🌟 Markdown 排版樣式 */
         .chat-msg.bot { align-self: flex-start; background: #e2e8f0; color: #1e293b; border-bottom-left-radius: 2px; }
-        .chat-msg.bot strong { font-weight: bold; color: #000; }
+        .chat-msg.bot strong { font-weight: 800; color: #000; }
+        .chat-msg.bot p { margin-bottom: 8px; }
+        .chat-msg.bot p:last-child { margin-bottom: 0; }
+        .chat-msg.bot ul, .chat-msg.bot ol { padding-left: 22px; margin-bottom: 8px; margin-top: 4px; }
+        .chat-msg.bot li { margin-bottom: 4px; }
+        .chat-msg.bot code { background: #cbd5e1; padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: #b91c1c; }
+        
         #ai-chat-input-area { display: flex; padding: 12px; border-top: 1px solid #e2e8f0; background: white; gap: 8px; }
         #ai-chat-input { flex-grow: 1; border: 1px solid #cbd5e1; border-radius: 20px; padding: 8px 15px; outline: none; font-size: 0.95rem; }
         #ai-chat-send { background: none; border: none; color: #4338ca; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; }
@@ -476,7 +484,7 @@
             let optsHtml = `<option value="">- 選填 -</option>` + buyerList.map(b => `<option value="${b}" ${b===curr?'selected':''}>${b}</option>`).join('');
             if (curr !== '' && !buyerList.includes(curr)) optsHtml += `<option value="${curr}" selected>${curr}</option>`;
             optsHtml += `<option disabled>──────</option><option value="ADD_NEW">➕ 新增...</option><option value="DELETE_USER">❌ 刪除...</option>`;
-            return `<select class="buyer-dropdown buyer-dd-${r['_rowIndex']}" data-original="${curr}" onchange="handleBuyerAction(this, '${safeStr(r['來源分頁'])}', ${r['_rowIndex']}, ${r['_buyerColIndex']})">${optsHtml}</select>`;
+            return `<select class="buyer-dropdown buyer-dd-${r._UUID}" data-original="${curr}" onchange="handleBuyerAction(this, '${safeStr(r['來源分頁'])}', '${r._UUID}', ${r['_buyerColIndex']})">${optsHtml}</select>`;
         }
 
         function getDateInputHtml(r, colName, colIndexKey, prefix) {
@@ -484,7 +492,7 @@
             if (val && val.includes('/')) { let parts = val.split('/'); m = parseInt(parts[0], 10).toString(); d = parseInt(parts[1], 10).toString(); }
             let mOpts = `<option value="">月</option>` + Array.from({length:12}, (_,i)=>`<option value="${i+1}" ${m===String(i+1)?'selected':''}>${i+1}</option>`).join('');
             let dOpts = `<option value="">日</option>` + Array.from({length:31}, (_,i)=>`<option value="${i+1}" ${d===String(i+1)?'selected':''}>${i+1}</option>`).join('');
-            return `<div style="display:flex;gap:2px;justify-content:center;"><select class="date-select ${prefix}-m-${r['_rowIndex']}" onchange="syncDateSelect('${safeStr(r['來源分頁'])}', ${r['_rowIndex']}, ${r[colIndexKey]}, '${colName}', '${prefix}')">${mOpts}</select><select class="date-select ${prefix}-d-${r['_rowIndex']}" onchange="syncDateSelect('${safeStr(r['來源分頁'])}', ${r['_rowIndex']}, ${r[colIndexKey]}, '${colName}', '${prefix}')">${dOpts}</select></div>`;
+            return `<div style="display:flex;gap:2px;justify-content:center;"><select class="date-select ${prefix}-m-${r._UUID}" onchange="syncDateSelect('${safeStr(r['來源分頁'])}', '${r._UUID}', ${r[colIndexKey]}, '${colName}', '${prefix}')">${mOpts}</select><select class="date-select ${prefix}-d-${r._UUID}" onchange="syncDateSelect('${safeStr(r['來源分頁'])}', '${r._UUID}', ${r[colIndexKey]}, '${colName}', '${prefix}')">${dOpts}</select></div>`;
         }
 
         function generateRowsHtml(dataChunk) {
@@ -493,10 +501,10 @@
                     const s = formatStatus(r['使用狀態']); let loc = []; for(let k in r) if(k.includes('位置') && r[k]) loc.push(String(r[k]).trim());
                     let ghsVal = String(r['GHS'] || '').toLowerCase().trim(); let ghsBadge = (ghsVal === 'true' || ghsVal === '是' || ghsVal === '1') ? '<span class="badge-soft badge-ghs-yes">有標籤</span>' : '<span class="badge-soft badge-ghs-no">無標籤</span>';
                     let colorClass = ['10%','20%','0%'].includes(s) ? 'status-danger' : (s === '30%' ? 'status-warning' : (s === '40%' ? 'status-caution' : 'status-normal'));
-                    let selectHtml = `<select class="sheet-dropdown ${colorClass}" data-original="${s}" onchange="syncStatus(this,'${safeStr(r['來源分頁'])}',${r['_rowIndex']},${r['_statusColIndex']})">` + opts.map(o => `<option value="${o}" ${o===s?'selected':''}>${o}</option>`).join('') + `</select>`;
-                    let isOrdered = String(r['需訂購'] || '').toLowerCase() === 'true'; let orderHtml = r['_orderColIndex'] > 0 ? `<input type="checkbox" class="form-check-input order-checkbox order-chk-${r['_rowIndex']}" ${isOrdered ? 'checked' : ''} onchange="syncOrderCheck(this, '${safeStr(r['來源分頁'])}', ${r['_rowIndex']}, ${r['_orderColIndex']})">` : '-';
+                    let selectHtml = `<select class="sheet-dropdown ${colorClass}" data-original="${s}" onchange="syncStatus(this,'${safeStr(r['來源分頁'])}','${r._UUID}',${r['_statusColIndex']})">` + opts.map(o => `<option value="${o}" ${o===s?'selected':''}>${o}</option>`).join('') + `</select>`;
+                    let isOrdered = String(r['需訂購'] || '').toLowerCase() === 'true'; let orderHtml = r['_orderColIndex'] > 0 ? `<input type="checkbox" class="form-check-input order-checkbox order-chk-${r._UUID}" ${isOrdered ? 'checked' : ''} onchange="syncOrderCheck(this, '${safeStr(r['來源分頁'])}', '${r._UUID}', ${r['_orderColIndex']})">` : '-';
                     
-                    let actionHtml = `<button class="action-btn edit-btn" title="編輯" onclick="openEditModal('${safeStr(r['來源分頁'])}', ${r['_rowIndex']})">${svgEdit}</button> <button class="action-btn delete-btn" title="刪除" onclick="confirmDelete('${safeStr(r['來源分頁'])}', ${r['_rowIndex']}, '${safeStr(r['藥品名稱'])}')">${svgDelete}</button>`;
+                    let actionHtml = `<button class="action-btn edit-btn" title="編輯" onclick="openEditModal('${safeStr(r['來源分頁'])}', '${r._UUID}')">${svgEdit}</button> <button class="action-btn delete-btn" title="刪除" onclick="confirmDelete('${safeStr(r['來源分頁'])}', '${r._UUID}', '${safeStr(r['藥品名稱'])}')">${svgDelete}</button>`;
                     return `<tr><td data-label="藥櫃" class="sheet-cell"><span class="badge-soft badge-sheet">${r['來源分頁']}</span></td><td data-label="藥品名稱" class="name-cell">${r['藥品名稱']}</td><td data-label="濃度">${r['濃度']||'-'}</td><td data-label="CAS NO.">${r['CAS  NO.']||r['CAS NO.']||'-'}</td><td data-label="規格/廠商" class="spec-cell"><div class="spec-vendor-container"><span class="spec-item">${r['規格']||'-'}</span><span class="vendor-item">${r['廠商']||'-'}</span></div></td><td data-label="位置"><span class="badge-soft badge-location">${r['位置']||'-'}</span></td><td data-label="編號"><span class="badge-num">${r['編號']||'-'}</span></td><td data-label="使用狀態">${selectHtml}</td><td data-label="請購人">${getBuyerSelectHtml(r)}</td><td data-label="請購日">${getDateInputHtml(r, '請購日', '_reqDateColIndex', 'req-date')}</td><td data-label="訂購日">${getDateInputHtml(r, '訂購日', '_orderDateColIndex', 'order-date')}</td><td data-label="需訂購">${orderHtml}</td><td data-label="GHS">${ghsBadge}</td><td data-label="操作" style="white-space:nowrap;">${actionHtml}</td></tr>`;
                 } catch(e) {
                     console.error("單列資料渲染異常", e); return '';
@@ -509,8 +517,8 @@
             document.getElementById('tableBody').innerHTML = generateRowsHtml(currentDisplayData.slice(0, currentRenderCount));
         }
 
-        function openEditModal(sheetName, rowIndex) {
-            currentEditRow = chemicalData.find(r => r['來源分頁'] === sheetName && r['_rowIndex'] === rowIndex); if (!currentEditRow) return alert("找不到藥品資料！");
+        function openEditModal(sheetName, uuid) {
+            currentEditRow = chemicalData.find(r => r['來源分頁'] === sheetName && r['_UUID'] === uuid); if (!currentEditRow) return alert("找不到藥品資料！");
             let casVal = '', concVal = '', specVal = '', venVal = '', locVal = '', numVal = '';
             for(let key in currentEditRow) {
                 if(key.toUpperCase().includes('CAS')) casVal = currentEditRow[key]; else if(key.includes('濃度')) concVal = currentEditRow[key]; else if(key.includes('規格')) specVal = currentEditRow[key]; else if(key.includes('廠商') || key.includes('廠牌')) venVal = currentEditRow[key]; else if(key.includes('位置')) locVal = currentEditRow[key]; else if(key.includes('編號')) numVal = currentEditRow[key];
@@ -543,17 +551,16 @@
 
             let finalUpdateData = {}; for(let key in updateData) { if(updateData[key].trim() !== String(currentEditRow[key] || '').trim()) { finalUpdateData[key] = updateData[key].trim(); } }
             if (Object.keys(finalUpdateData).length === 0) { editModalInstance.hide(); btn.disabled = false; btn.innerText = "儲存修改"; return; }
-            apiCall('updateChemical', { sheetName: currentEditRow['來源分頁'], rowIndex: currentEditRow['_rowIndex'], updateData: finalUpdateData }).then(success => { btn.disabled = false; btn.innerText = "儲存修改"; if(success) { editModalInstance.hide(); forceRefresh(); } else { alert("儲存失敗！"); } }).catch(e => { btn.disabled = false; btn.innerText = "儲存修改"; alert("連線異常！"); });
+            apiCall('updateChemical', { sheetName: currentEditRow['來源分頁'], uuid: currentEditRow['_UUID'], updateData: finalUpdateData }).then(success => { btn.disabled = false; btn.innerText = "儲存修改"; if(success) { editModalInstance.hide(); forceRefresh(); } else { alert("儲存失敗！"); } }).catch(e => { btn.disabled = false; btn.innerText = "儲存修改"; alert("連線異常！"); });
         }
 
-        function confirmDelete(sheetName, rowIndex, drugName) {
+        function confirmDelete(sheetName, uuid, drugName) {
             if (confirm(`🚨 警告：您確定要將【 ${drugName} 】從資料庫中永久刪除嗎？\n(刪除後無法復原)`)) {
                 document.getElementById('searchInput').placeholder = "🗑️ 正在從雲端刪除資料...";
-                apiCall('deleteChemical', { sheetName: sheetName, rowIndex: rowIndex }).then(success => { if(success) forceRefresh(); else alert("刪除失敗！"); }).catch(e => alert("連線異常！"));
+                apiCall('deleteChemical', { sheetName: sheetName, uuid: uuid }).then(success => { if(success) forceRefresh(); else alert("刪除失敗！"); }).catch(e => alert("連線異常！"));
             }
         }
 
-        // 🌟 防呆搜尋核心邏輯 (修正 4-bromo 誤判問題)
         document.getElementById('searchInput').oninput = function() {
             clearTimeout(searchTimeout); 
             const originalTerm = this.value.trim(); 
@@ -571,10 +578,8 @@
                     const cleanName = rawName.replace(/[\s\-]/g, '');
                     const cleanCas = rawCas.replace(/[\s\-]/g, '');
 
-                    // 1. 最優先：精準包含比對
                     if (cleanName.includes(cleanTerm) || cleanCas.includes(cleanTerm)) return true;
 
-                    // 2. 模糊搜尋：只有在「純英文字母」且長度 >= 4 時才啟動
                     if (/^[a-z]+$/.test(termLower) && termLower.length >= 4) {
                         return rawName.split(/[\s\-]+/).some(w => levenshtein(termLower, w) <= 1);
                     }
@@ -591,7 +596,7 @@
             body.innerHTML = toBuy.map(r => { 
                 try {
                     let loc = []; for(let k in r) if(k.includes('位置') && r[k]) loc.push(String(r[k]).trim()); let s = formatStatus(r['使用狀態']); let colorClass = ['10%','20%','0%'].includes(s) ? 'status-danger' : (s === '30%' ? 'status-warning' : (s === '40%' ? 'status-caution' : 'status-normal')); 
-                    return `<tr><td data-label="藥櫃" class="sheet-cell"><span class="badge-soft badge-sheet">${r['來源分頁']}</span></td><td data-label="名稱" class="name-cell">${r['藥品名稱']}</td><td data-label="CAS NO.">${r['CAS  NO.']||r['CAS NO.']||'-'}</td><td data-label="規格" class="spec-cell">${r['規格']||'-'}</td><td data-label="位置"><span class="badge-soft badge-location">${loc.join('-')||'-'}</span></td><td data-label="編號"><span class="badge-num">${r['編號']||'-'}</span></td><td data-label="狀態"><span class="badge-soft ${colorClass}">${s}</span></td><td data-label="請購人">${getBuyerSelectHtml(r)}</td><td data-label="請購日">${getDateInputHtml(r, '請購日', '_reqDateColIndex', 'req-date')}</td><td data-label="訂購日">${getDateInputHtml(r, '訂購日', '_orderDateColIndex', 'order-date')}</td><td data-label="需訂購"><input type="checkbox" class="form-check-input order-checkbox" checked onchange="syncOrderCheck(this, '${safeStr(r['來源分頁'])}', ${r['_rowIndex']}, ${r['_orderColIndex']})"></td></tr>`; 
+                    return `<tr><td data-label="藥櫃" class="sheet-cell"><span class="badge-soft badge-sheet">${r['來源分頁']}</span></td><td data-label="名稱" class="name-cell">${r['藥品名稱']}</td><td data-label="CAS NO.">${r['CAS  NO.']||r['CAS NO.']||'-'}</td><td data-label="規格" class="spec-cell">${r['規格']||'-'}</td><td data-label="位置"><span class="badge-soft badge-location">${loc.join('-')||'-'}</span></td><td data-label="編號"><span class="badge-num">${r['編號']||'-'}</span></td><td data-label="狀態"><span class="badge-soft ${colorClass}">${s}</span></td><td data-label="請購人">${getBuyerSelectHtml(r)}</td><td data-label="請購日">${getDateInputHtml(r, '請購日', '_reqDateColIndex', 'req-date')}</td><td data-label="訂購日">${getDateInputHtml(r, '訂購日', '_orderDateColIndex', 'order-date')}</td><td data-label="需訂購"><input type="checkbox" class="form-check-input order-checkbox" checked onchange="syncOrderCheck(this, '${safeStr(r['來源分頁'])}', '${r._UUID}', ${r['_orderColIndex']})"></td></tr>`; 
                 } catch(e) { return ''; }
             }).join(''); 
             updateUIVisibility(document.getElementById('searchInput').value.trim()); 
@@ -600,13 +605,17 @@
         function renderMemos() { const container = document.getElementById('memoListContainer'); if (memoList.length === 0) { container.innerHTML = '<div class="text-center text-muted" style="font-size:0.85rem;">目前沒有備忘錄。</div>'; return; } container.innerHTML = memoList.map(m => { const authorTag = m.author ? `<span class="memo-author-badge">${m.author}</span>` : ''; return `<div class="memo-item"><div class="memo-text">${authorTag}${m.text}</div><div class="memo-meta"><span>${m.time}</span><button class="memo-delete" onclick="deleteMemo('${m.id}')">✖</button></div></div>`; }).join(''); }
         function addNewMemo() { const input = document.getElementById('memoInput'); const authorSelect = document.getElementById('memoAuthorSelect'); const textVal = input.value.trim(); const authorVal = authorSelect.value; if (!authorVal) { alert("⚠️ 請先選擇「留言者」！"); authorSelect.focus(); return; } if (!textVal) return; apiCall('addMemo', {text: textVal, author: authorVal}).then(updated => { input.value = ''; memoList = updated; saveToLocal(); renderMemos(); }); }
         function deleteMemo(id) { if (confirm('確定刪除這則備忘錄嗎？')) { apiCall('deleteMemo', {id: id}).then(updated => { memoList = updated; saveToLocal(); renderMemos(); }); } }
-        function syncStatus(el, sheet, row, col) { const val = el.value; const origVal = el.getAttribute('data-original'); el.disabled = true; let target = chemicalData.find(r => r['來源分頁']===sheet && r['_rowIndex']===row); if(target) { target['使用狀態'] = val; saveToLocal(); } apiCall('updateSheetStatus', {sheetName: sheet, rowIndex: row, colIndex: col, newValue: val}).then(s => { el.disabled = false; if (!s) { el.value = origVal; if(target){ target['使用狀態']=origVal; saveToLocal();} alert("寫入失敗！"); return; } el.setAttribute('data-original', val); el.className = `sheet-dropdown ${['10%','20%','0%'].includes(val)?'status-danger':(val==='30%'?'status-warning':(val==='40%'?'status-caution':'status-normal'))}`; updateBuyList(); }).catch(() => { el.disabled = false; el.value = origVal; if(target) { target['使用狀態'] = origVal; saveToLocal(); } alert("連線異常！"); }); }
-        function handleBuyerAction(selectElem, sheetName, rowIndex, colIndex, isMemo = false) { const val = selectElem.value; const originalVal = selectElem.getAttribute('data-original'); if (val === 'ADD_NEW' || val === 'DELETE_USER') { let actionStr = val === 'ADD_NEW' ? '新增' : '刪除'; let name = prompt(`請輸入要「${actionStr}」的人員名稱：`); if (name && name.trim() !== '') { const targetName = name.trim(); selectElem.disabled = true; if (val === 'ADD_NEW') { apiCall('addBuyer', {name: targetName}).then(updatedList => { buyerList = updatedList; saveToLocal(); renderDropdowns(); displayData(chemicalData); updateBuyList(); if(isMemo) document.getElementById('memoAuthorSelect').value = targetName; selectElem.disabled = false; }).catch(e => { selectElem.disabled = false; selectElem.value = originalVal||''; alert('操作失敗！'); }); } else { apiCall('removeBuyer', {name: targetName}).then(updatedList => { buyerList = updatedList; chemicalData.forEach(r => { if(String(r['請購人']) === targetName) r['請購人'] = ''; }); saveToLocal(); renderDropdowns(); displayData(chemicalData); updateBuyList(); alert(`已刪除人員「${targetName}」。`); selectElem.disabled = false; }).catch(e => { selectElem.disabled = false; selectElem.value = originalVal||''; alert('操作失敗！'); }); } } else { selectElem.value = originalVal||''; } } else if(!isMemo) { selectElem.disabled = true; let targetRow = chemicalData.find(x => x['來源分頁']===sheetName && x['_rowIndex']===rowIndex); if(targetRow) { targetRow['請購人'] = val; saveToLocal(); } apiCall('updateSheetStatus', {sheetName: sheetName, rowIndex: rowIndex, colIndex: colIndex, newValue: val}).then(() => { selectElem.disabled = false; selectElem.setAttribute('data-original', val); updateBuyList(); }); } }
-        function syncDateSelect(sheetName, rowIndex, colIndex, colName, prefix) { let mVal = document.querySelector(`.${prefix}-m-${rowIndex}`).value; let dVal = document.querySelector(`.${prefix}-d-${rowIndex}`).value; let val = (mVal && dVal) ? `${mVal.padStart(2, '0')}/${dVal.padStart(2, '0')}` : ""; if (!mVal && !dVal) val = ""; else if (!mVal || !dVal) return; let r = chemicalData.find(x => x['來源分頁'] === sheetName && x['_rowIndex'] === rowIndex); if(r) { r[colName] = val; saveToLocal(); } apiCall('updateSheetStatus', {sheetName: sheetName, rowIndex: rowIndex, colIndex: colIndex, newValue: val}).then(() => { updateBuyList(); }); }
-        function syncOrderCheck(checkboxElem, sheetName, rowIndex, colIndex) { const isChecked = checkboxElem.checked; checkboxElem.disabled = true; let targetRow = chemicalData.find(r => r['來源分頁'] === sheetName && r['_rowIndex'] === rowIndex); if (targetRow) { targetRow['需訂購'] = isChecked ? 'true' : 'false'; if (!isChecked) { targetRow['請購人'] = ''; targetRow['請購日'] = ''; targetRow['訂購日'] = ''; } saveToLocal(); } const colMap = { order: targetRow['_orderColIndex'], buyer: targetRow['_buyerColIndex'], reqDate: targetRow['_reqDateColIndex'], orderDate: targetRow['_orderDateColIndex'] }; apiCall('toggleNeedToOrder', {sheetName: sheetName, rowIndex: rowIndex, isChecked: isChecked, colMap: colMap}).then(success => { checkboxElem.disabled = false; if (success) { const term = document.getElementById('searchInput').value.toLowerCase().trim(); if (!term) displayData(chemicalData); else displayData(chemicalData.filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(term)))); updateBuyList(); } }).catch(err => { checkboxElem.disabled = false; checkboxElem.checked = !isChecked; alert("連線失敗！"); }); }
+        function syncStatus(el, sheet, uuid, col) { const val = el.value; const origVal = el.getAttribute('data-original'); el.disabled = true; let target = chemicalData.find(r => r['來源分頁']===sheet && r['_UUID']===uuid); if(target) { target['使用狀態'] = val; saveToLocal(); } apiCall('updateSheetStatus', {sheetName: sheet, uuid: uuid, colIndex: col, newValue: val}).then(s => { el.disabled = false; if (!s) { el.value = origVal; if(target){ target['使用狀態']=origVal; saveToLocal();} alert("寫入失敗！"); return; } el.setAttribute('data-original', val); el.className = `sheet-dropdown ${['10%','20%','0%'].includes(val)?'status-danger':(val==='30%'?'status-warning':(val==='40%'?'status-caution':'status-normal'))}`; updateBuyList(); }).catch(() => { el.disabled = false; el.value = origVal; if(target) { target['使用狀態'] = origVal; saveToLocal(); } alert("連線異常！"); }); }
+        function handleBuyerAction(selectElem, sheetName, uuid, colIndex, isMemo = false) { const val = selectElem.value; const originalVal = selectElem.getAttribute('data-original'); if (val === 'ADD_NEW' || val === 'DELETE_USER') { let actionStr = val === 'ADD_NEW' ? '新增' : '刪除'; let name = prompt(`請輸入要「${actionStr}」的人員名稱：`); if (name && name.trim() !== '') { const targetName = name.trim(); selectElem.disabled = true; if (val === 'ADD_NEW') { apiCall('addBuyer', {name: targetName}).then(updatedList => { buyerList = updatedList; saveToLocal(); renderDropdowns(); displayData(chemicalData); updateBuyList(); if(isMemo) document.getElementById('memoAuthorSelect').value = targetName; selectElem.disabled = false; }).catch(e => { selectElem.disabled = false; selectElem.value = originalVal||''; alert('操作失敗！'); }); } else { apiCall('removeBuyer', {name: targetName}).then(updatedList => { buyerList = updatedList; chemicalData.forEach(r => { if(String(r['請購人']) === targetName) r['請購人'] = ''; }); saveToLocal(); renderDropdowns(); displayData(chemicalData); updateBuyList(); alert(`已刪除人員「${targetName}」。`); selectElem.disabled = false; }).catch(e => { selectElem.disabled = false; selectElem.value = originalVal||''; alert('操作失敗！'); }); } } else { selectElem.value = originalVal||''; } } else if(!isMemo) { selectElem.disabled = true; let targetRow = chemicalData.find(x => x['來源分頁']===sheetName && x['_UUID']===uuid); if(targetRow) { targetRow['請購人'] = val; saveToLocal(); } apiCall('updateSheetStatus', {sheetName: sheetName, uuid: uuid, colIndex: colIndex, newValue: val}).then(() => { selectElem.disabled = false; selectElem.setAttribute('data-original', val); updateBuyList(); }); } }
+        function syncDateSelect(sheetName, uuid, colIndex, colName, prefix) { let mVal = document.querySelector(`.${prefix}-m-${uuid}`).value; let dVal = document.querySelector(`.${prefix}-d-${uuid}`).value; let val = (mVal && dVal) ? `${mVal.padStart(2, '0')}/${dVal.padStart(2, '0')}` : ""; if (!mVal && !dVal) val = ""; else if (!mVal || !dVal) return; let r = chemicalData.find(x => x['來源分頁'] === sheetName && x['_UUID'] === uuid); if(r) { r[colName] = val; saveToLocal(); } apiCall('updateSheetStatus', {sheetName: sheetName, uuid: uuid, colIndex: colIndex, newValue: val}).then(() => { updateBuyList(); }); }
+        function syncOrderCheck(checkboxElem, sheetName, uuid, colIndex) { const isChecked = checkboxElem.checked; checkboxElem.disabled = true; let targetRow = chemicalData.find(r => r['來源分頁'] === sheetName && r['_UUID'] === uuid); if (targetRow) { targetRow['需訂購'] = isChecked ? 'true' : 'false'; if (!isChecked) { targetRow['請購人'] = ''; targetRow['請購日'] = ''; targetRow['訂購日'] = ''; } saveToLocal(); } const colMap = { order: targetRow['_orderColIndex'], buyer: targetRow['_buyerColIndex'], reqDate: targetRow['_reqDateColIndex'], orderDate: targetRow['_orderDateColIndex'] }; apiCall('toggleNeedToOrder', {sheetName: sheetName, uuid: uuid, isChecked: isChecked, colMap: colMap}).then(success => { checkboxElem.disabled = false; if (success) { const term = document.getElementById('searchInput').value.toLowerCase().trim(); if (!term) displayData(chemicalData); else displayData(chemicalData.filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(term)))); updateBuyList(); } }).catch(err => { checkboxElem.disabled = false; checkboxElem.checked = !isChecked; alert("連線失敗！"); }); }
         function toggleChat() { const box = document.getElementById('ai-chat-box'); if (box.style.display === 'flex') box.style.display = 'none'; else { box.style.display = 'flex'; document.getElementById('ai-chat-input').focus(); } }
-        function formatBotMessage(text) { return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>'); }
-        function sendChatMessage() { const input = document.getElementById('ai-chat-input'); const msg = input.value.trim(); if (!msg) return; appendMessage('user', msg); input.value = ''; input.disabled = true; const typingId = appendMessage('bot', '...', true); apiCall('askGeminiAssistant', {userMessage: msg}).then(response => { document.getElementById(typingId).remove(); appendMessage('bot', formatBotMessage(response)); input.disabled = false; input.focus(); }).catch(err => { document.getElementById(typingId).remove(); appendMessage('bot', '⚠️ 抱歉，連線發生異常。'); input.disabled = false; input.focus(); }); }
+        
+        function formatBotMessage(text) { 
+            return typeof marked !== 'undefined' ? marked.parse(text) : text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>'); 
+        }
+        
+        function sendChatMessage() { const input = document.getElementById('ai-chat-input'); const msg = input.value.trim(); if (!msg) return; appendMessage('user', msg); input.value = ''; input.disabled = true; const typingId = appendMessage('bot', '🐕 正在思考中...', true); apiCall('askGeminiAssistant', {userMessage: msg}).then(response => { document.getElementById(typingId).remove(); appendMessage('bot', formatBotMessage(response)); input.disabled = false; input.focus(); }).catch(err => { document.getElementById(typingId).remove(); appendMessage('bot', '⚠️ 抱歉，連線發生異常。'); input.disabled = false; input.focus(); }); }
         function appendMessage(sender, text, isTyping = false) { const msgs = document.getElementById('ai-chat-messages'); const div = document.createElement('div'); div.className = `chat-msg ${sender}`; if (isTyping) div.id = 'typing-' + Date.now(); if (sender === 'user') div.innerText = text; else div.innerHTML = text; msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight; return div.id; }
     </script>
 </body>
